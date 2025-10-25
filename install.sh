@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Image Gallery Server CLI Installer
-# One-line install: curl -fsSL https://raw.githubusercontent.com/your-username/image-gallery-server/main/install.sh | bash
+# Folder Gallery CLI Installer
+# One-line install: curl -fsSL https://raw.githubusercontent.com/blashbrook/folder-gallery/main/install.sh | bash
 
 set -euo pipefail
 
@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-REPO_URL="https://github.com/blashbrook/image-gallery-server"
+REPO_URL="https://github.com/blashbrook/folder-gallery"
 TEMP_DIR=$(mktemp -d)
 INSTALL_DIR="$HOME/.gallery-cli"
 BIN_NAME="gallery"
@@ -71,7 +71,7 @@ check_requirements() {
 
 # Download the latest release
 download_package() {
-    info "Downloading Image Gallery CLI..."
+info "Downloading Folder Gallery CLI..."
     
     cd "$TEMP_DIR"
     
@@ -207,7 +207,7 @@ trap cleanup EXIT
 
 # Uninstall function
 uninstall() {
-    info "Uninstalling Image Gallery CLI..."
+info "Uninstalling Folder Gallery CLI..."
     
     # Remove symlink
     local bin_locations=("/usr/local/bin" "$HOME/.local/bin" "/usr/bin")
@@ -224,7 +224,7 @@ uninstall() {
         success "Removed $INSTALL_DIR"
     fi
     
-    success "Image Gallery CLI uninstalled successfully"
+success "Folder Gallery CLI uninstalled successfully"
     exit 0
 }
 
@@ -280,7 +280,7 @@ restart_shell() {
 # Main installation flow
 main() {
     echo ""
-    echo "🖼️  Image Gallery Server CLI Installer"
+echo "🖼️  Folder Gallery CLI Installer"
     echo "======================================"
     echo ""
     
@@ -296,13 +296,13 @@ main() {
         echo ""
         echo "Options:"
         echo "  --help, -h        Show this help message"
-        echo "  --uninstall, -u   Uninstall Image Gallery CLI"
+echo "  --uninstall, -u   Uninstall Folder Gallery CLI"
         echo ""
         echo "Install via curl:"
-        echo "  curl -fsSL https://raw.githubusercontent.com/your-username/image-gallery-server/main/install.sh | bash"
+echo "  curl -fsSL https://raw.githubusercontent.com/blashbrook/folder-gallery/main/install.sh | bash"
         echo ""
         echo "Uninstall:"
-        echo "  curl -fsSL https://raw.githubusercontent.com/your-username/image-gallery-server/main/install.sh | bash -s -- --uninstall"
+echo "  curl -fsSL https://raw.githubusercontent.com/blashbrook/folder-gallery/main/install.sh | bash -s -- --uninstall"
         echo ""
         exit 0
     fi

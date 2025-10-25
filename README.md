@@ -1,4 +1,4 @@
-# Image Gallery Server CLI
+# Folder Gallery CLI
 
 A lightweight Node.js web server that creates dynamic galleries from directories containing images and videos. Now available as a global CLI tool!
 
@@ -114,13 +114,13 @@ Simply run `gallery up` in any folder with media files, and it will automaticall
 **Linux/macOS:**
 ```bash
 # Install directly from GitHub (when published)
-curl -fsSL https://raw.githubusercontent.com/blashbrook/image-gallery-server/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/blashbrook/folder-gallery/main/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
 # Run in PowerShell (may require Administrator privileges)
-Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/blashbrook/image-gallery-server/main/install.ps1')
+Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/blashbrook/folder-gallery/main/install.ps1')
 ```
 
 ### 📦 Local Install (Development)
@@ -128,8 +128,8 @@ Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://raw.
 **Linux/macOS:**
 ```bash
 # Clone the repository first
-git clone https://github.com/blashbrook/image-gallery-server.git
-cd image-gallery-server
+git clone https://github.com/blashbrook/folder-gallery.git
+cd folder-gallery
 
 # Run local installer
 ./install-local.sh
@@ -138,8 +138,8 @@ cd image-gallery-server
 **Windows:**
 ```powershell
 # Clone the repository first
-git clone https://github.com/blashbrook/image-gallery-server.git
-cd image-gallery-server
+git clone https://github.com/blashbrook/folder-gallery.git
+cd folder-gallery
 
 # Run local installer
 .\install.ps1
@@ -151,7 +151,7 @@ cd image-gallery-server
 npm install -g .
 
 # Or if published to npm
-npm install -g image-gallery-server
+npm install -g folder-gallery
 ```
 
 ### 🗑️ Uninstall
@@ -159,25 +159,25 @@ npm install -g image-gallery-server
 **Linux/macOS:**
 ```bash
 # Using installer script
-curl -fsSL https://raw.githubusercontent.com/blashbrook/image-gallery-server/main/install.sh | bash -s -- --uninstall
+curl -fsSL https://raw.githubusercontent.com/blashbrook/folder-gallery/main/install.sh | bash -s -- --uninstall
 
 # Or local uninstall
 ./install-local.sh --uninstall
 
 # Or manual uninstall
-npm uninstall -g image-gallery-server
+npm uninstall -g folder-gallery
 ```
 
 **Windows:**
 ```powershell
 # Using installer script
-Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/blashbrook/image-gallery-server/main/install.ps1'); .\install.ps1 -Uninstall
+Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/blashbrook/folder-gallery/main/install.ps1'); .\\install.ps1 -Uninstall
 
 # Or local uninstall
 .\install.ps1 -Uninstall
 
 # Or manual uninstall
-npm uninstall -g image-gallery-server
+npm uninstall -g folder-gallery
 ```
 
 ## CLI Usage
@@ -347,7 +347,7 @@ Serves thumbnails and cached files from `.gallery-cache/`.
 ## Directory Structure
 
 ```
-image-gallery-server/
+folder-gallery/
 ├── server.js              # Main server application
 ├── metadata.js            # Metadata management module
 ├── package.json           # Node.js dependencies

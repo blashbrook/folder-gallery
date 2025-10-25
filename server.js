@@ -103,7 +103,7 @@ async function generateGalleryHTML() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Gallery</title>
+    <title>Folder Gallery</title>
     <style>
         * {
             margin: 0;
@@ -317,7 +317,7 @@ async function generateGalleryHTML() {
 </head>
 <body>
     <div class="header">
-        <h1>🖼️ Image Gallery</h1>
+        <h1>🖼️ Folder Gallery</h1>
         <div class="info">
             <span id="stats">Loading...</span>
         </div>
@@ -907,7 +907,7 @@ async function startServer() {
     PORT = await findAvailablePort(PORT);
     
     app.listen(PORT, () => {
-        console.log(`🖼️  Image Gallery Server running on http://localhost:${PORT}`);
+        console.log(`🖼️  Folder Gallery running on http://localhost:${PORT}`);
         console.log(`📁 Scanning directory: ${SCAN_DIR}`);
         console.log(`💡 To scan a different directory, run: node server.js /path/to/images`);
     });

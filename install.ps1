@@ -1,5 +1,5 @@
-# Image Gallery Server CLI Installer for Windows
-# One-line install: Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/blashbrook/image-gallery-server/main/install.ps1')
+# Folder Gallery CLI Installer for Windows
+# One-line install: Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/blashbrook/folder-gallery/main/install.ps1')
 
 param(
     [switch]$Uninstall,
@@ -7,7 +7,7 @@ param(
 )
 
 # Configuration
-$RepoUrl = "https://github.com/blashbrook/image-gallery-server"
+$RepoUrl = "https://github.com/blashbrook/folder-gallery"
 $InstallDir = "$env:USERPROFILE\.gallery-cli"
 $BinName = "gallery"
 $BatFile = "$BinName.bat"
@@ -77,7 +77,7 @@ function Test-Requirements {
 
 # Download the latest release
 function Get-Package {
-    Write-Info "Downloading Image Gallery CLI..."
+Write-Info "Downloading Folder Gallery CLI..."
     
     $TempDir = [System.IO.Path]::GetTempPath() + [System.Guid]::NewGuid().ToString()
     New-Item -ItemType Directory -Path $TempDir | Out-Null
@@ -96,7 +96,7 @@ function Get-Package {
         [System.IO.Compression.ZipFile]::ExtractToDirectory($ArchivePath, $TempDir)
         
         # Move contents from extracted subfolder
-        $ExtractedFolder = Get-ChildItem -Path $TempDir -Directory | Where-Object { $_.Name -like "*image-gallery-server*" } | Select-Object -First 1
+$ExtractedFolder = Get-ChildItem -Path $TempDir -Directory | Where-Object { $_.Name -like "*folder-gallery*" } | Select-Object -First 1
         if ($ExtractedFolder) {
             $SourcePath = $ExtractedFolder.FullName
         } else {
@@ -241,7 +241,7 @@ function Remove-TempFiles {
 
 # Uninstall function
 function Uninstall-Gallery {
-    Write-Info "Uninstalling Image Gallery CLI..."
+Write-Info "Uninstalling Folder Gallery CLI..."
     
     # Remove batch file from common locations
     $BinLocations = @(
@@ -263,7 +263,7 @@ function Uninstall-Gallery {
         Write-Success "Removed $InstallDir"
     }
     
-    Write-Success "Image Gallery CLI uninstalled successfully"
+Write-Success "Folder Gallery CLI uninstalled successfully"
     exit 0
 }
 
@@ -315,17 +315,17 @@ function Show-PostInstallGuidance {
 # Show help
 function Show-Help {
     Write-Host ""
-    Write-Host "🖼️  Image Gallery Server CLI Installer for Windows" -ForegroundColor Cyan
+Write-Host "🖼️  Folder Gallery CLI Installer for Windows" -ForegroundColor Cyan
     Write-Host "===================================================" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "Usage: .\install.ps1 [OPTIONS]"
     Write-Host ""
     Write-Host "Options:"
     Write-Host "  -Help          Show this help message"
-    Write-Host "  -Uninstall     Uninstall Image Gallery CLI"
+Write-Host "  -Uninstall     Uninstall Folder Gallery CLI"
     Write-Host ""
     Write-Host "Install via PowerShell (Run as Administrator may be required):"
-    Write-Host "  Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/blashbrook/image-gallery-server/main/install.ps1')" -ForegroundColor Yellow
+Write-Host "  Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/blashbrook/folder-gallery/main/install.ps1')" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Or download and run locally:"
     Write-Host "  .\install.ps1" -ForegroundColor Yellow
@@ -339,7 +339,7 @@ function Show-Help {
 # Main installation flow
 function Main {
     Write-Host ""
-    Write-Host "🖼️  Image Gallery Server CLI Installer" -ForegroundColor Cyan
+Write-Host "🖼️  Folder Gallery CLI Installer" -ForegroundColor Cyan
     Write-Host "======================================" -ForegroundColor Cyan
     Write-Host ""
     

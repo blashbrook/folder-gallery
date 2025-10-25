@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Local Image Gallery Server CLI Installer
+# Local Folder Gallery CLI Installer
 # Run from the project directory: ./install-local.sh
 
 set -euo pipefail
@@ -46,7 +46,7 @@ check_requirements() {
     
     # Check if we're in the right directory
     if [ ! -f "$SCRIPT_DIR/package.json" ] || [ ! -f "$SCRIPT_DIR/bin/gallery.js" ]; then
-        error "This script must be run from the image-gallery-server directory"
+error "This script must be run from the folder-gallery directory"
     fi
     
     # Check Node.js
@@ -185,7 +185,7 @@ verify_installation() {
 
 # Uninstall function
 uninstall() {
-    info "Uninstalling Image Gallery CLI..."
+info "Uninstalling Folder Gallery CLI..."
     
     # Remove symlink
     local bin_locations=("/usr/local/bin" "$HOME/.local/bin" "/usr/bin")
@@ -202,7 +202,7 @@ uninstall() {
         success "Removed $INSTALL_DIR"
     fi
     
-    success "Image Gallery CLI uninstalled successfully"
+success "Folder Gallery CLI uninstalled successfully"
     exit 0
 }
 
@@ -258,7 +258,7 @@ restart_shell() {
 # Main installation flow
 main() {
     echo ""
-    echo "🖼️  Image Gallery Server CLI Local Installer"
+echo "🖼️  Folder Gallery CLI Local Installer"
     echo "==========================================="
     echo ""
     
@@ -274,10 +274,10 @@ main() {
         echo ""
         echo "Options:"
         echo "  --help, -h        Show this help message"
-        echo "  --uninstall, -u   Uninstall Image Gallery CLI"
+echo "  --uninstall, -u   Uninstall Folder Gallery CLI"
         echo ""
         echo "This script installs the Gallery CLI globally from the current directory."
-        echo "Make sure you're in the image-gallery-server project directory."
+echo "Make sure you're in the folder-gallery project directory."
         echo ""
         exit 0
     fi

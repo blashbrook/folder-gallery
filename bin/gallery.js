@@ -401,7 +401,7 @@ async function deleteGalleryFiles(dir) {
 // CLI Commands
 program
     .name('gallery')
-    .description('Image Gallery Server CLI')
+.description('Folder Gallery CLI')
     .version('1.0.0');
 
 program

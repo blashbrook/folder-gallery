@@ -1,4 +1,4 @@
-# Gallery Server - Performance Optimizations
+# Folder Gallery - Performance Optimizations
 
 ## Thumbnail Generation Performance
 

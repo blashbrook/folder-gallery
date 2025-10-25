@@ -196,7 +196,7 @@ All generated files are stored in a `.gallery-cache` directory created in the cu
 ### Global Installation
 ```bash
 # Install globally from npm
-npm install -g image-gallery-server
+npm install -g folder-gallery
 
 # Or install from local directory (for development)
 npm link
@@ -790,7 +790,7 @@ When adding new functionality, follow these patterns:
 ## How It Works: Complete Flow
 
 ### 1. Installation & Global Command
-1. User runs `npm install -g image-gallery-server` (or `npm link` for dev)
+1. User runs `npm install -g folder-gallery` (or `npm link` for dev)
 2. NPM installs package to global node_modules
 3. NPM creates `gallery` symlink in global bin pointing to `bin/gallery.js`
 4. User can now run `gallery` command from any directory
