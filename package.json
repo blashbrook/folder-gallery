@@ -12,7 +12,7 @@
     "test": "echo \"No tests specified\" && exit 0"
   },
   "keywords": ["gallery", "images", "web-server", "express", "cli"],
-  "author": "",
+  "author": "blashbrook",
   "license": "MIT",
   "repository": {
     "type": "git",
