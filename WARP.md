@@ -4,9 +4,47 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Project Overview
 
-This is a lightweight Node.js CLI tool that creates dynamic image galleries from any directory. It can be installed globally and launched from any folder using the `gallery` command. The server generates web files dynamically in a `.gallery-cache` directory within the working directory.
+This is a lightweight Node.js CLI tool that creates dynamic image galleries from any directory. It can be installed globally and launched from any folder using the `gallery` command. The tool consists of:
+
+1. **Legacy standalone server** (`server.js`) - Original single-file implementation with embedded HTML
+2. **Modern CLI system** (`bin/gallery.js`, `bin/server-runner.js`) - Global command with detached background servers
+3. **Dynamic cache system** - Per-directory `.gallery-cache` with generated HTML, thumbnails, and metadata
+
+### Core Philosophy & Goals
+
+**Simplicity First**: The project prioritizes ease of use over complexity. Users should be able to run `gallery up` in any directory and get a beautiful, functional gallery immediately.
+
+**Performance Through Intelligence**: Rather than raw speed, the focus is on smart optimizations:
+- Viewport-aware thumbnail generation (visible images first)
+- Progressive loading (tiny previews → full thumbnails)
+- Aggressive caching with intelligent invalidation
+- Minimal SSE updates to reduce overhead
+
+**User Experience Excellence**: Every feature serves the end-user experience:
+- Responsive masonry layout that works on all devices
+- Smooth zoom/pan interactions with visual feedback
+- Real-time progress indicators during operations
+- Persistent favorites with localStorage
+- Theme toggling for different lighting conditions
+
+**Native macOS Aesthetic**: The design embraces glassmorphism inspired by modern macOS:
+- Frosted glass modal buttons with backdrop blur
+- Translucent UI elements that feel like they float above content
+- System font stacks for native OS integration
+- Subtle depth through layered shadows and transparency
+- Refined interactions that feel at home on macOS
 
 ## Key Architecture
+
+### Design Priorities (Critical - DO NOT VIOLATE)
+
+1. **Single-Command Simplicity**: `gallery up` must work from any directory without configuration
+2. **Non-Blocking CLI**: CLI commands return control to terminal immediately
+3. **Per-Directory Isolation**: Each directory gets its own `.gallery-cache` and server process
+4. **Progressive Enhancement**: Gallery works without JavaScript, enhanced with it
+5. **Graceful Degradation**: Failures in thumbnail generation don't break the gallery
+6. **Memory Efficiency**: Large galleries (1000+ images) shouldn't crash or slow the system
+7. **Visual Responsiveness**: UI updates must feel instant, even during heavy processing
 
 ### Global Installation System
 - **Package Structure**: Installed globally via `npm install -g` or `npm link`
@@ -31,13 +69,14 @@ All generated files are stored in a `.gallery-cache` directory created in the cu
 - **Recursive directory scanning** with security path validation
 - **Automatic thumbnail generation** with caching using Sharp
 - **Base64 filename encoding** for thumbnail/metadata file safety
-- **Viewport-aware thumbnail loading**: Prioritizes visible images using Intersection Observer
-- **Progressive loading**: Low-res previews (64x64) → High-res thumbnails (300x300)
+- **Viewport-aware thumbnail loading**: Prioritizes visible images first
+- **Progressive loading**: Tiny previews (64x64) → Full thumbnails (300x300)
 - **File watching**: Auto-invalidates cache when images are added/removed (using chokidar)
 - **Server-Sent Events (SSE)**: Real-time progress updates for thumbnail generation
-- **Responsive masonry grid** layout with modal image viewing
-- **Heart/favorite system**: Stored in localStorage
-- **Dark/light theme toggle**
+- **CSS-based masonry layout** (column-count, no JavaScript layout)
+- **Heart/favorite system**: Stored in localStorage with filtering
+- **Dark/light theme toggle** via CSS custom properties
+- **Pause/resume thumbnail generation** for user control
 - **REST API** at `/api/gallery` returning directory-grouped image data
 
 ## User Interface Features
