@@ -4,7 +4,7 @@
   "description": "A lightweight web server that creates dynamic galleries from image directories",
   "main": "server.js",
   "bin": {
-    "gallery": "./bin/gallery.js"
+    "gallery": "bin/gallery.js"
   },
   "scripts": {
     "start": "node server.js",
@@ -22,7 +22,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/blashbrook/folder-gallery.git"
+    "url": "git+https://github.com/blashbrook/folder-gallery.git"
   },
   "bugs": {
     "url": "https://github.com/blashbrook/folder-gallery/issues"
