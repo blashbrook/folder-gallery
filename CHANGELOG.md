@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/blashbrook/folder-gallery/compare/v1.0.0...v1.0.1) (2025-10-25)
+
+
+### Bug Fixes
+
+* update npm ([4903daa](https://github.com/blashbrook/folder-gallery/commit/4903daab563d191c4dcd43625bd37e5fa5a82b02))
+
 # 1.0.0 (2025-10-25)
 
 
