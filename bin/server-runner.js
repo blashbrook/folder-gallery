@@ -1034,6 +1034,7 @@ async function generateIndexHTML() {
         .zoom-btn:hover { background: var(--button-bg-hover); transform: scale(1.15); box-shadow: 0 6px 20px rgba(0,0,0,0.6); }
         .zoom-btn.hearted svg { fill: #e74c3c; stroke: #e74c3c; }
         .zoom-btn:not(.hearted) svg { fill: none; }
+        .zoom-btn.tagged svg { fill: #3498db; stroke: #3498db; }
         .zoom-info {
             position: fixed; top: 30px; left: 30px;
             background: var(--button-bg); backdrop-filter: blur(10px);
@@ -1336,6 +1337,13 @@ async function generateIndexHTML() {
             const heartBtn = document.getElementById('heartBtn');
             if (heartBtn && currentModalMedia) {
                 heartBtn.classList.toggle('hearted', heartedImages.has(currentModalMedia.relativePath));
+            }
+        }
+        
+        function updateTagButton() {
+            const tagBtn = document.getElementById('tagBtn');
+            if (tagBtn && currentModalMedia && isMac) {
+                tagBtn.classList.toggle('tagged', currentTags && currentTags.length > 0);
             }
         }
         
@@ -1811,6 +1819,7 @@ async function generateIndexHTML() {
             try {
                 currentTags = isMac ? await fetchTagsForCurrent() : [];
                 renderTagChips();
+                updateTagButton();
             } catch {}
         }
         
@@ -1915,6 +1924,7 @@ async function generateIndexHTML() {
                 const data = await resp.json().catch(() => ({}));
                 if (resp.ok && data.ok) {
                     hideTagEditor();
+                    updateTagButton();
                 } else {
                     alert('Failed to save tags');
                 }
