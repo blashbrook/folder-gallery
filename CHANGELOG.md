@@ -1,3 +1,10 @@
+## [1.10.3](https://github.com/blashbrook/folder-gallery/compare/v1.10.2...v1.10.3) (2025-10-26)
+
+
+### Bug Fixes
+
+* address test failures ([31aa9e8](https://github.com/blashbrook/folder-gallery/commit/31aa9e8f4a068119ceaf513f25c8a984f6022db2))
+
 ## [1.10.2](https://github.com/blashbrook/folder-gallery/compare/v1.10.1...v1.10.2) (2025-10-26)
 
 
