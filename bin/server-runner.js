@@ -1051,6 +1051,55 @@ async function generateIndexHTML() {
             box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: none;
         }
         .zoom-info.active { display: block; }
+        /* File info panel */
+        .file-info-panel {
+            position: fixed;
+            top: 80px;
+            left: 30px;
+            background: var(--button-bg);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: var(--button-text);
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            z-index: 2001;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            display: none;
+            max-width: 400px;
+            line-height: 1.6;
+        }
+        .file-info-panel.active { display: block; }
+        .file-info-row {
+            margin-bottom: 8px;
+            word-wrap: break-word;
+        }
+        .file-info-label {
+            font-weight: 600;
+            opacity: 0.9;
+            margin-right: 8px;
+        }
+        .file-info-value {
+            opacity: 0.85;
+        }
+        .reveal-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 6px;
+            color: var(--button-text);
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .reveal-btn:hover {
+            background: rgba(255,255,255,0.25);
+            transform: translateY(-1px);
+        }
         /* Glassmorphic tag editor panel */
         .tag-editor {
             position: fixed;
@@ -1257,6 +1306,19 @@ async function generateIndexHTML() {
     <div class="modal" id="imageModal">
         <div class="close" id="closeModal">✕</div>
         <div class="zoom-info" id="zoomInfo">100%</div>
+        <div class="file-info-panel" id="fileInfoPanel">
+            <div class="file-info-row"><span class="file-info-label">Filename:</span><span class="file-info-value" id="infoFilename"></span></div>
+            <div class="file-info-row"><span class="file-info-label">Path:</span><span class="file-info-value" id="infoPath"></span></div>
+            <div class="file-info-row"><span class="file-info-label">Size:</span><span class="file-info-value" id="infoSize"></span></div>
+            <div class="file-info-row"><span class="file-info-label">Dimensions:</span><span class="file-info-value" id="infoDimensions"></span></div>
+            <button class="reveal-btn" id="revealBtn" style="display:none;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                Reveal in Finder
+            </button>
+        </div>
         <img class="modal-image" id="modalImage" style="display: none;">
         <video class="modal-video" id="modalVideo" controls style="display: none;"></video>
         <div class="zoom-controls" id="zoomControls">
@@ -1270,6 +1332,13 @@ async function generateIndexHTML() {
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20.59 13.41L11 3H4v7l9.59 9.59a2 2 0 0 0 2.83 0l4.17-4.17a2 2 0 0 0 0-2.83z"></path>
                     <circle cx="6.5" cy="6.5" r="1.5"></circle>
+                </svg>
+            </button>
+            <button class="zoom-btn" id="fileInfoBtn" title="File Information">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
                 </svg>
             </button>
             <button class="zoom-btn" id="zoomOut" title="Zoom Out">−</button>
@@ -1622,6 +1691,8 @@ async function generateIndexHTML() {
                     }
                     img.alt = item.name;
                     img.loading = 'lazy';
+                    img.title = item.name; // Tooltip with filename
+                    galleryItem.title = item.name; // Tooltip on container too
                     galleryItem.appendChild(img);
                     galleryItem.onclick = () => openModal(item);
                     gallery.appendChild(galleryItem);
@@ -1831,6 +1902,7 @@ async function generateIndexHTML() {
             }
             modal.classList.add('active');
             updateHeartButton();
+            updateFileInfo(media);
             // Show Finder tag button only on macOS and for files (both images/videos are files)
             const tagBtn = document.getElementById('tagBtn');
             console.log("Modal: isMac=", isMac, "tagCommandAvailable=", tagCommandAvailable);
@@ -1857,9 +1929,68 @@ async function generateIndexHTML() {
         
         function closeModal() {
             hideTagEditor();
+            hideFileInfo();
             modal.classList.remove('active');
             if (modalVideo.style.display === 'block') { modalVideo.pause(); modalVideo.src = ''; }
             modalImg.src = ''; resetZoom();
+        }
+        
+        function updateFileInfo(media) {
+            if (!media) return;
+            document.getElementById('infoFilename').textContent = media.name || '';
+            document.getElementById('infoPath').textContent = media.relativePath || '';
+            
+            // Get file size from the server
+            fetch('/api/file-info?path=' + encodeURIComponent(media.relativePath))
+                .then(res => res.json())
+                .then(data => {
+                    if (data.size !== undefined) {
+                        const sizeMB = (data.size / (1024 * 1024)).toFixed(2);
+                        document.getElementById('infoSize').textContent = sizeMB + ' MB';
+                    }
+                    if (data.dimensions) {
+                        document.getElementById('infoDimensions').textContent = data.dimensions;
+                    }
+                    // Show reveal button only on macOS
+                    if (isMac) {
+                        const revealBtn = document.getElementById('revealBtn');
+                        revealBtn.style.display = 'inline-flex';
+                        revealBtn.onclick = () => revealInFinder(media.relativePath);
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('infoSize').textContent = 'Unknown';
+                    document.getElementById('infoDimensions').textContent = 'Unknown';
+                });
+        }
+        
+        function toggleFileInfo() {
+            const panel = document.getElementById('fileInfoPanel');
+            if (panel.classList.contains('active')) {
+                hideFileInfo();
+            } else {
+                showFileInfo();
+            }
+        }
+        
+        function showFileInfo() {
+            document.getElementById('fileInfoPanel').classList.add('active');
+        }
+        
+        function hideFileInfo() {
+            document.getElementById('fileInfoPanel').classList.remove('active');
+        }
+        
+        async function revealInFinder(relativePath) {
+            try {
+                await fetch('/api/reveal-in-finder', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ relativePath })
+                });
+            } catch (e) {
+                console.log('Failed to reveal in Finder:', e);
+            }
         }
         
         function zoom(delta) {
@@ -1886,6 +2017,7 @@ async function generateIndexHTML() {
         document.getElementById('tagBtn').onclick = () => {
             toggleTagEditor();
         };
+        document.getElementById('fileInfoBtn').onclick = toggleFileInfo;
         const tagEditor = document.getElementById('tagEditor');
         const tagChips = document.getElementById('tagChips');
         const tagInput = document.getElementById('tagInput');
@@ -2152,6 +2284,82 @@ async function setupServer() {
         } catch (error) {
             console.error('Error during rescan:', error);
             res.status(500).json({ error: 'Failed to rescan' });
+        }
+    });
+    
+    // API endpoint to get file information
+    app.get('/api/file-info', async (req, res) => {
+        try {
+            const relativePath = req.query.path;
+            if (!relativePath) {
+                return res.status(400).json({ error: 'Path required' });
+            }
+            
+            const filePath = path.join(scanDir, relativePath);
+            const resolvedPath = path.resolve(filePath);
+            const resolvedScanDir = path.resolve(scanDir);
+            
+            // Security check
+            if (!resolvedPath.startsWith(resolvedScanDir)) {
+                return res.status(403).json({ error: 'Access denied' });
+            }
+            
+            // Get file stats
+            const stats = await fs.stat(resolvedPath);
+            const info = {
+                size: stats.size,
+                dimensions: null
+            };
+            
+            // Get image dimensions if it's an image
+            const ext = path.extname(resolvedPath).toLowerCase();
+            const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff'];
+            
+            if (imageExts.includes(ext)) {
+                try {
+                    const metadata = await sharp(resolvedPath).metadata();
+                    info.dimensions = `${metadata.width} × ${metadata.height}`;
+                } catch (e) {
+                    console.warn('Could not read image dimensions:', e.message);
+                }
+            }
+            
+            res.json(info);
+        } catch (error) {
+            console.error('Error getting file info:', error);
+            res.status(500).json({ error: 'Failed to get file info' });
+        }
+    });
+    
+    // API endpoint to reveal file in Finder (macOS only)
+    app.post('/api/reveal-in-finder', express.json(), async (req, res) => {
+        if (process.platform !== 'darwin') {
+            return res.status(400).json({ error: 'Reveal in Finder only available on macOS' });
+        }
+        
+        try {
+            const { relativePath } = req.body;
+            if (!relativePath) {
+                return res.status(400).json({ error: 'relativePath required' });
+            }
+            
+            const filePath = path.join(scanDir, relativePath);
+            const resolvedPath = path.resolve(filePath);
+            const resolvedScanDir = path.resolve(scanDir);
+            
+            // Security check
+            if (!resolvedPath.startsWith(resolvedScanDir)) {
+                return res.status(403).json({ error: 'Access denied' });
+            }
+            
+            // Use open command to reveal in Finder
+            const { spawn } = require('child_process');
+            spawn('open', ['-R', resolvedPath], { detached: true });
+            
+            res.json({ ok: true });
+        } catch (error) {
+            console.error('Error revealing in Finder:', error);
+            res.status(500).json({ error: 'Failed to reveal in Finder' });
         }
     });
     
