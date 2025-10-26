@@ -1,3 +1,11 @@
+## [1.7.2](https://github.com/blashbrook/folder-gallery/compare/v1.7.1...v1.7.2) (2025-10-26)
+
+
+### Bug Fixes
+
+* add instant update for tag filter ([5665681](https://github.com/blashbrook/folder-gallery/commit/5665681f06349aaf15c1913baaab809d44dffebd))
+* fix tests ([228138f](https://github.com/blashbrook/folder-gallery/commit/228138fb3f018fcf0a0dbe7a75dfce678c736c4e))
+
 ## [1.7.1](https://github.com/blashbrook/folder-gallery/compare/v1.7.0...v1.7.1) (2025-10-26)
 
 
