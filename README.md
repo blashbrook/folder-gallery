@@ -1,8 +1,59 @@
 # Folder Gallery CLI
 
-A lightweight Node.js web server that creates dynamic galleries from directories containing images and videos. Now available as a global CLI tool!
+A lightweight Node.js web server that creates dynamic galleries from directories containing images and videos. Install globally and run `gallery up` in any folder to instantly create a beautiful, responsive web gallery.
 
-Simply run `gallery up` in any folder with media files, and it will automatically generate a beautiful, responsive web gallery with real-time scanning progress, pan/zoom functionality, and video support.
+## Quick Start
+
+### Installation (Recommended)
+
+Install globally via npm:
+
+```bash
+npm install -g folder-gallery
+```
+
+**Platform Requirements:**
+- Node.js 18.0.0 or higher
+- **macOS**: Xcode Command Line Tools (`xcode-select --install`)
+- **Linux**: Build tools (`build-essential` on Ubuntu/Debian)
+- **Windows**: Visual Studio Build Tools
+
+### Usage
+
+```bash
+# Navigate to your image folder
+cd ~/Pictures/Vacation2024
+
+# Start the gallery
+gallery up
+
+# Your browser will open automatically showing your gallery!
+```
+
+### Common Commands
+
+```bash
+# Start in specific directory
+gallery up -d /path/to/images
+
+# Use custom port
+gallery up --port 8080
+
+# Start without auto-opening browser
+gallery up --no-open
+
+# Stop all gallery servers
+gallery down
+
+# Force rescan current directory
+gallery rescan
+```
+
+That's it! The gallery will:
+- ✅ Recursively scan for all images and videos
+- ✅ Generate thumbnails automatically
+- ✅ Watch for new files in real-time
+- ✅ Run in the background even after closing terminal
 
 ## Features
 
@@ -111,80 +162,43 @@ Simply run `gallery up` in any folder with media files, and it will automaticall
 - **Port Range**: 3000-3099 (automatic port selection if 3000 in use)
 - **Bandwidth**: Minimal - thumbnails cached locally, full images served on-demand
 
-## Installation Methods
+## Alternative Installation Methods
 
-### 🚀 One-Line Install (Recommended)
+### 📦 From Source (Development)
 
-**Linux/macOS:**
+If you want to install from source or contribute to development:
+
 ```bash
-# Install directly from GitHub (when published)
-curl -fsSL https://raw.githubusercontent.com/blashbrook/folder-gallery/main/install.sh | bash
-```
-
-**Windows (PowerShell):**
-```powershell
-# Run in PowerShell (may require Administrator privileges)
-Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/blashbrook/folder-gallery/main/install.ps1')
-```
-
-### 📦 Local Install (Development)
-
-**Linux/macOS:**
-```bash
-# Clone the repository first
+# Clone the repository
 git clone https://github.com/blashbrook/folder-gallery.git
 cd folder-gallery
 
-# Run local installer
-./install-local.sh
+# Install dependencies
+npm install
+
+# Link globally for development
+npm link
 ```
 
-**Windows:**
-```powershell
-# Clone the repository first
-git clone https://github.com/blashbrook/folder-gallery.git
-cd folder-gallery
+### 🔗 Development Workflow
 
-# Run local installer
-.\install.ps1
-```
-
-### 🔧 Manual Install
 ```bash
-# Install globally from this directory
-npm install -g .
+# Link local version for testing
+npm run link
 
-# Or if published to npm
-npm install -g folder-gallery
+# Make your changes...
+
+# Unlink when done
+npm run unlink
 ```
 
 ### 🗑️ Uninstall
 
-**Linux/macOS:**
 ```bash
-# Using installer script
-curl -fsSL https://raw.githubusercontent.com/blashbrook/folder-gallery/main/install.sh | bash -s -- --uninstall
-
-# Or local uninstall
-./install-local.sh --uninstall
-
-# Or manual uninstall
 npm uninstall -g folder-gallery
 ```
 
-**Windows:**
-```powershell
-# Using installer script
-Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/blashbrook/folder-gallery/main/install.ps1'); .\\install.ps1 -Uninstall
-
-# Or local uninstall
-.\install.ps1 -Uninstall
-
-# Or manual uninstall
-npm uninstall -g folder-gallery
-```
-
-## CLI Usage
+## CLI Commands Reference
 
 ### Start Gallery Server
 ```bash
@@ -195,7 +209,7 @@ gallery up
 gallery up -d /path/to/images
 
 # Use custom port
-gallery up -p 8080
+gallery up --port 8080
 
 # Don't open browser automatically
 gallery up --no-open
@@ -210,10 +224,10 @@ gallery scan
 gallery scan -d /path/to/images
 ```
 
-### Stop All Servers
+### Stop Servers
 ```bash
 # Stop all running gallery servers
-gallery stop
+gallery down
 ```
 
 ### Force Rescan
@@ -240,31 +254,23 @@ gallery delete -d /path/to/clean
 gallery delete -f
 ```
 
-## Installation
+## Legacy Server Mode
 
-1. **Clone or download this project**
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+For development or if you prefer not to use the CLI:
 
-## Quick Start
-
-### Basic Usage
-Launch the server in the current directory:
 ```bash
+# Clone and install dependencies
+git clone https://github.com/blashbrook/folder-gallery.git
+cd folder-gallery
+npm install
+
+# Run standalone server
 npm start
-```
 
-### Specify a Directory
-Launch the server to scan a specific directory:
-```bash
-node server.js /path/to/your/images
-```
+# Or specify directory
+node server.js /path/to/images
 
-### Development Mode
-Run with auto-restart on file changes:
-```bash
+# Development mode with auto-restart
 npm run dev
 ```
 
@@ -546,8 +552,10 @@ MIT License - feel free to use this project for personal or commercial purposes.
 | Command | Description | Example |
 |---------|-------------|----------|
 | `gallery up` | Start server | `gallery up -d ~/Photos` |
+| `gallery up --port <n>` | Use custom port | `gallery up --port 8080` |
+| `gallery up --no-open` | Don't open browser | `gallery up --no-open` |
+| `gallery down` | Stop all servers | `gallery down` |
 | `gallery scan` | Preview scan results | `gallery scan -d ~/Documents` |
-| `gallery stop` | Stop all servers | `gallery stop` |
 | `gallery rescan` | Force rescan files | `gallery rescan` |
 | `gallery cleanup` | Clean orphaned thumbnails | `gallery cleanup` |
 | `gallery delete` | Clean cache files | `gallery delete -f` |
