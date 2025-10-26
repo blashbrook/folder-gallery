@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/blashbrook/folder-gallery/compare/v1.3.0...v1.3.1) (2025-10-26)
+
+
+### Bug Fixes
+
+* fix thumbnail display ([b646d06](https://github.com/blashbrook/folder-gallery/commit/b646d062147aef404195a71d0eec6f035c5c1fb5))
+
 # [1.3.0](https://github.com/blashbrook/folder-gallery/compare/v1.2.0...v1.3.0) (2025-10-26)
 
 
