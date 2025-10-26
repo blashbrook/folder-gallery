@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/blashbrook/folder-gallery/compare/v1.0.1...v1.1.0) (2025-10-26)
+
+
+### Features
+
+* publish to npm ([a6830e6](https://github.com/blashbrook/folder-gallery/commit/a6830e643ca1e91c639e34661866db926df00076))
+
 ## [1.0.1](https://github.com/blashbrook/folder-gallery/compare/v1.0.0...v1.0.1) (2025-10-25)
 
 
