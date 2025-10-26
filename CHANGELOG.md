@@ -1,3 +1,11 @@
+## [1.10.1](https://github.com/blashbrook/folder-gallery/compare/v1.10.0...v1.10.1) (2025-10-26)
+
+
+### Bug Fixes
+
+* remove backup files ([bc26c60](https://github.com/blashbrook/folder-gallery/commit/bc26c609b969cea1027293a56119c5ee6ed0e19c))
+* update README.md to reflect changes ([9f38cf2](https://github.com/blashbrook/folder-gallery/commit/9f38cf23b69d7f9dcee9e525dc2d198d2fb75082))
+
 # [1.10.0](https://github.com/blashbrook/folder-gallery/compare/v1.9.0...v1.10.0) (2025-10-26)
 
 
