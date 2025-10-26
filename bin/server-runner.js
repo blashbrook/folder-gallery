@@ -668,6 +668,11 @@ async function getCachedGalleryData() {
         }
     }
     
+    // Sort images within each directory by name
+    for (const directory in galleries) {
+        galleries[directory].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    
     const result = {
         scanDirectory: scanDir,
         totalImages: images.length,
