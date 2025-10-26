@@ -1943,6 +1943,24 @@ async function generateIndexHTML() {
                 });
                 const data = await resp.json().catch(() => ({}));
                 if (resp.ok && data.ok) {
+                    // Update fileTags for current file
+                    fileTags.set(currentModalMedia.relativePath, [...currentTags]);
+                    // Rebuild allTags from all files
+                    try {
+                        if (typeof allTags !== 'undefined') {
+                            allTags.clear();
+                            fileTags.forEach((tags, path) => {
+                                tags.forEach(tag => {
+                                    allTags.set(tag, (allTags.get(tag) || 0) + 1);
+                                });
+                            });
+                        }
+                        if (typeof populateTagFilterDropdown === 'function') {
+                            populateTagFilterDropdown();
+                        }
+                    } catch (e) {
+                        console.error('Error updating tag filter:', e);
+                    }
                     hideTagEditor();
                     updateTagButton();
                 } else {
