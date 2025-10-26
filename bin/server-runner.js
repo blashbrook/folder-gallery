@@ -2053,8 +2053,9 @@ async function setupServer() {
         }
         try {
             const { relativePath, tags } = req.body || {};
-            if (!relativePath || !Array.isArray(tags) || tags.length === 0) {
-                return res.status(400).json({ error: 'relativePath and non-empty tags array required' });
+            // Allow empty tags array (to remove all tags)
+            if (!relativePath || !Array.isArray(tags)) {
+                return res.status(400).json({ error: 'relativePath and tags array required' });
             }
             const imagePath = path.join(scanDir, relativePath);
             const resolvedPath = path.resolve(imagePath);
@@ -2064,23 +2065,11 @@ async function setupServer() {
             }
             await fs.access(resolvedPath);
 
-            // Write tags via xattr binary plist
+            // Write tags using the tag CLI tool
             try {
-                // build hex via python
-                const { spawn } = require('child_process');
-                const py = spawn('python3', ['-c', `import sys, plistlib; print(plistlib.dumps(sys.argv[1:], fmt=plistlib.FMT_BINARY).hex())`, ''].concat(tags));
-                let hex = '';
-                py.stdout.on('data', d => { hex += d.toString().trim(); });
-                py.on('close', async (codeExit) => {
-                    if (!hex) return res.status(500).json({ error: 'Failed to encode tags' });
-                    const { spawn: sp } = require('child_process');
-                    const x = sp('/usr/bin/xattr', ['-wx', 'com.apple.metadata:_kMDItemUserTags', hex, resolvedPath]);
-                    x.on('close', async (c) => {
-                        if (c !== 0) return res.status(500).json({ error: 'Failed to set tags' });
-                        const readBack = await readFinderTags(resolvedPath);
-                        return res.json({ ok: true, tags: readBack });
-                    });
-                });
+                await writeFinderTags(resolvedPath, tags);
+                const readBack = await readFinderTags(resolvedPath);
+                return res.json({ ok: true, tags: readBack });
             } catch (err) {
                 return res.status(500).json({ error: err.message || 'Failed to set Finder tags' });
             }
