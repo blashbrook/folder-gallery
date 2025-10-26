@@ -247,7 +247,7 @@ async function launchBackgroundServer(scanDir, port, openBrowser = true) {
     const serverRunnerPath = path.join(PACKAGE_DIR, 'bin', 'server-runner.js');
     
     // Spawn fully detached child process
-    const child = spawn('node', [serverRunnerPath, JSON.stringify(config)], {
+    const child = spawn(process.execPath, [serverRunnerPath, JSON.stringify(config)], {
         detached: true,
         stdio: ['ignore', 'ignore', 'ignore'], // Fully detach all stdio
         cwd: scanDir
