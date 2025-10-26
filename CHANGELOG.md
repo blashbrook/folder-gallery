@@ -1,3 +1,10 @@
+## [1.10.4](https://github.com/blashbrook/folder-gallery/compare/v1.10.3...v1.10.4) (2025-10-26)
+
+
+### Bug Fixes
+
+* **server:** make image route compatible with path-to-regexp v8 and serve index.html from scanDir\n\n- Change /image route to regex to avoid path-to-regexp errors\n- Serve index.html via express.static at root; remove explicit app.get('/')\n- Use scanDir for .gallery-cache paths instead of process.cwd()\n- Log generated index.html absolute path for debugging ([c934cb9](https://github.com/blashbrook/folder-gallery/commit/c934cb90590fdd96d5ba71ba390a45b8e85d0c69))
+
 ## [1.10.3](https://github.com/blashbrook/folder-gallery/compare/v1.10.2...v1.10.3) (2025-10-26)
 
 
