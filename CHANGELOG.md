@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/blashbrook/folder-gallery/compare/v1.6.0...v1.6.1) (2025-10-26)
+
+
+### Bug Fixes
+
+* semantic-release failures ([1972167](https://github.com/blashbrook/folder-gallery/commit/19721674a53517a60f9d12318c7aac63b14a752a))
+
 # [1.6.0](https://github.com/blashbrook/folder-gallery/compare/v1.5.1...v1.6.0) (2025-10-26)
 
 
