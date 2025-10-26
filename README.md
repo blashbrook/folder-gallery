@@ -45,7 +45,7 @@ Simply run `gallery up` in any folder with media files, and it will automaticall
 
 #### **Linux:**
 - **Build tools**: `build-essential` (Ubuntu/Debian) or `gcc-c++` (CentOS/RHEL)
-- **Python**: 3.6+ (for Sharp native compilation)
+- **Python**: 3.x (for Sharp native compilation)
 - **Additional packages**: May need `libvips-dev` for Sharp optimization
 - **FFmpeg** (Optional): For real video thumbnails from frame extraction
   - Install: `sudo apt-get install ffmpeg` (Ubuntu/Debian) or `sudo yum install ffmpeg` (CentOS/RHEL)
@@ -62,7 +62,7 @@ Simply run `gallery up` in any folder with media files, and it will automaticall
 
 #### **Windows:**
 - **Visual Studio Build Tools** or **Visual Studio 2019+**
-- **Python**: 3.6+ (Microsoft Store version recommended)
+- **Python**: 3.x (for Sharp native compilation)
 - **PowerShell**: 3.0+ (Windows 10+ includes 5.1+)
 - **FFmpeg** (Optional): For real video thumbnails from frame extraction
   - Download from: https://ffmpeg.org/download.html
@@ -470,7 +470,7 @@ PORT=8080 node server.js /path/to/images
 **Q: "gyp ERR!" during installation on Windows**
 - Install Visual Studio Build Tools or Visual Studio with C++ tools
 - Alternative: Install windows-build-tools: `npm install -g windows-build-tools`
-- Ensure Python 3.6+ is installed and in PATH
+- Ensure Python 3.x is installed and in PATH (for Sharp native compilation)
 
 **Q: Sharp installation fails on macOS**
 - Install Xcode Command Line Tools: `xcode-select --install`

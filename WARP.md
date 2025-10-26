@@ -888,7 +888,7 @@ tests/
 
 ### Key Testing Features
 - **Cross-platform mocking**: Tests run on any platform without macOS dependencies
-- **Subprocess simulation**: MockSpawn class simulates `child_process.spawn` for xattr/Python calls
+- **Subprocess simulation**: MockSpawn class simulates `child_process.spawn` for `tag` CLI tool calls
 - **Security testing**: Validates protection against path traversal attacks
 - **Error handling**: Comprehensive coverage of failure scenarios
 - **API integration**: Full HTTP request/response cycle testing

@@ -40,8 +40,8 @@ describe('macOS Finder Tags', () => {
                 // Override simulation to emit tag data
                 mockProcess._simulateExecution = () => {
                     setTimeout(() => {
-                        // Simulate Python script output with tags
-                        mockProcess.stdout.emit('data', 'Work\nPersonal\nImportant\n');
+                        // Simulate tag tool output (comma-separated)
+                        mockProcess.stdout.emit('data', 'Work,Personal,Important');
                         mockProcess.emit('close', 0);
                     }, 10);
                 };
@@ -52,7 +52,8 @@ describe('macOS Finder Tags', () => {
             const tags = await readFinderTags(testFilePath);
             
             expect(tags).toEqual(['Work', 'Personal', 'Important']);
-            expect(mockSpawn).toHaveBeenCalledWith('python3', ['-'], { stdio: ['pipe', 'pipe', 'ignore'] });
+            const tagPath = process.env.TAG_PATH || '/opt/homebrew/bin/tag';
+            expect(mockSpawn).toHaveBeenCalledWith(tagPath, ['--list', '--no-name', testFilePath], { stdio: ['ignore', 'pipe', 'ignore'] });
         });
 
         it('returns empty array when file has no tags', async () => {
@@ -98,14 +99,14 @@ describe('macOS Finder Tags', () => {
         });
 
         it('filters out empty tags and trims whitespace', async () => {
-            // Mock tag response with whitespace and empty lines
+            // Mock tag response with whitespace
             mockSpawn.mockImplementation((command, args, options) => {
                 const mockProcess = new MockSpawn(command, args, options);
                 
                 mockProcess._simulateExecution = () => {
                     setTimeout(() => {
-                        // Simulate messy output with whitespace
-                        mockProcess.stdout.emit('data', '  Work  \n\nPersonal\n  \n Important\n\n');
+                        // Simulate messy output with whitespace (comma-separated)
+                        mockProcess.stdout.emit('data', '  Work  , ,Personal,   , Important  ');
                         mockProcess.emit('close', 0);
                     }, 10);
                 };
@@ -118,19 +119,12 @@ describe('macOS Finder Tags', () => {
             expect(tags).toEqual(['Work', 'Personal', 'Important']);
         });
 
-        it('writes correct Python code to stdin', async () => {
-            let stdinContent = '';
+        it('calls tag CLI with correct arguments', async () => {
+            let commandArgs = [];
             
             mockSpawn.mockImplementation((command, args, options) => {
+                commandArgs = args;
                 const mockProcess = new MockSpawn(command, args, options);
-                
-                mockProcess.stdin.write = jest.fn((data) => {
-                    stdinContent += data;
-                });
-                
-                mockProcess.stdin.end = jest.fn((data) => {
-                    if (data) stdinContent += data;
-                });
                 
                 mockProcess._simulateExecution = () => {
                     setTimeout(() => {
@@ -144,91 +138,46 @@ describe('macOS Finder Tags', () => {
 
             await readFinderTags(testFilePath);
             
-            expect(stdinContent).toContain('import sys, plistlib, subprocess');
-            expect(stdinContent).toContain('/usr/bin/xattr');
-            expect(stdinContent).toContain('com.apple.metadata:_kMDItemUserTags');
-            expect(stdinContent).toContain(testFilePath);
+            expect(commandArgs).toEqual(['--list', '--no-name', testFilePath]);
         });
     });
 
     describe('writeFinderTags', () => {
         it('correctly applies a list of tags to a file', async () => {
             const tagsToSet = ['Work', 'Important', 'Project'];
-            let xattrCalled = false;
-            let encodedHex = '';
+            let tagArgs = [];
 
-            // Mock the two-stage process: Python encoding then xattr setting
             mockSpawn.mockImplementation((command, args, options) => {
-                if (command === 'python3' && args[0] === '-c') {
-                    // First call: Python encoding
+                const tagPath = process.env.TAG_PATH || '/opt/homebrew/bin/tag';
+                if (command === tagPath) {
+                    tagArgs = args;
                     const mockProcess = new MockSpawn(command, args, options);
                     
                     mockProcess._simulateExecution = () => {
                         setTimeout(() => {
-                            // Simulate hex-encoded plist output
-                            const mockHex = '62706c69737430303030303030';
-                            mockProcess.stdout.emit('data', mockHex + '\n');
                             mockProcess.emit('close', 0);
                         }, 10);
                     };
                     
                     return mockProcess;
-                } else if (command === '/usr/bin/xattr') {
-                    // Second call: xattr setting
-                    xattrCalled = true;
-                    encodedHex = args[2]; // The hex value passed to xattr
-                    
-                    const mockProcess = new MockSpawn(command, args, options);
-                    
-                    mockProcess._simulateExecution = () => {
-                        setTimeout(() => {
-                            mockProcess.emit('close', 0); // Success
-                        }, 10);
-                    };
-                    
-                    return mockProcess;
                 }
+                return new MockSpawn(command, args, options);
             });
 
             const result = await writeFinderTags(testFilePath, tagsToSet);
             
             expect(result).toBe(true);
-            expect(xattrCalled).toBe(true);
-            expect(encodedHex).toBe('62706c69737430303030303030');
-            
-            // Check that python was called with correct tags
-            const pythonCall = mockSpawn.mock.calls.find(call => call[0] === 'python3');
-            expect(pythonCall[1]).toContain('Work');
-            expect(pythonCall[1]).toContain('Important');
-            expect(pythonCall[1]).toContain('Project');
-            
-            // Check that xattr was called with correct parameters
-            const xattrCall = mockSpawn.mock.calls.find(call => call[0] === '/usr/bin/xattr');
-            expect(xattrCall[1]).toContain('-wx');
-            expect(xattrCall[1]).toContain('com.apple.metadata:_kMDItemUserTags');
-            expect(xattrCall[1]).toContain(testFilePath);
+            expect(tagArgs).toEqual(['--set', 'Work,Important,Project', testFilePath]);
         });
 
         it('can clear existing tags from a file', async () => {
             const emptyTags = [];
-            let xattrCalled = false;
+            let tagCalled = false;
 
             mockSpawn.mockImplementation((command, args, options) => {
-                if (command === 'python3') {
-                    const mockProcess = new MockSpawn(command, args, options);
-                    
-                    mockProcess._simulateExecution = () => {
-                        setTimeout(() => {
-                            // Simulate hex for empty array
-                            mockProcess.stdout.emit('data', '62706c697374303000000000\n');
-                            mockProcess.emit('close', 0);
-                        }, 10);
-                    };
-                    
-                    return mockProcess;
-                } else if (command === '/usr/bin/xattr') {
-                    xattrCalled = true;
-                    
+                const tagPath = process.env.TAG_PATH || '/opt/homebrew/bin/tag';
+                if (command === tagPath) {
+                    tagCalled = true;
                     const mockProcess = new MockSpawn(command, args, options);
                     
                     mockProcess._simulateExecution = () => {
@@ -239,82 +188,44 @@ describe('macOS Finder Tags', () => {
                     
                     return mockProcess;
                 }
+                return new MockSpawn(command, args, options);
             });
 
             const result = await writeFinderTags(testFilePath, emptyTags);
             
             expect(result).toBe(true);
-            expect(xattrCalled).toBe(true);
+            expect(tagCalled).toBe(true);
         });
 
-        it('rejects when Python encoding fails', async () => {
+        it('rejects when tag command fails', async () => {
             mockSpawn.mockImplementation((command, args, options) => {
-                if (command === 'python3') {
+                const tagPath = process.env.TAG_PATH || '/opt/homebrew/bin/tag';
+                if (command === tagPath) {
                     const mockProcess = new MockSpawn(command, args, options);
                     
                     mockProcess._simulateExecution = () => {
                         setTimeout(() => {
-                            // Simulate no output (encoding failure)
-                            mockProcess.stdout.emit('data', '');
-                            mockProcess.emit('close', 1);
+                            mockProcess.emit('close', 1); // tag command failed
                         }, 10);
                     };
                     
                     return mockProcess;
                 }
+                return new MockSpawn(command, args, options);
             });
 
             await expect(writeFinderTags(testFilePath, ['tag1']))
-                .rejects.toThrow('Failed to encode tags');
+                .rejects.toThrow('tag command failed');
         });
 
-        it('rejects when xattr command fails', async () => {
-            mockSpawn.mockImplementation((command, args, options) => {
-                if (command === 'python3') {
-                    const mockProcess = new MockSpawn(command, args, options);
-                    
-                    mockProcess._simulateExecution = () => {
-                        setTimeout(() => {
-                            mockProcess.stdout.emit('data', '62706c69737430303030303030\n');
-                            mockProcess.emit('close', 0);
-                        }, 10);
-                    };
-                    
-                    return mockProcess;
-                } else if (command === '/usr/bin/xattr') {
-                    const mockProcess = new MockSpawn(command, args, options);
-                    
-                    mockProcess._simulateExecution = () => {
-                        setTimeout(() => {
-                            mockProcess.emit('close', 1); // xattr failure
-                        }, 10);
-                    };
-                    
-                    return mockProcess;
-                }
-            });
-
-            await expect(writeFinderTags(testFilePath, ['tag1']))
-                .rejects.toThrow('xattr failed');
-        });
 
         it('handles empty tag array correctly', async () => {
-            let pythonArgs = [];
+            let tagArgs = [];
             
             mockSpawn.mockImplementation((command, args, options) => {
-                if (command === 'python3') {
-                    pythonArgs = args;
-                    const mockProcess = new MockSpawn(command, args, options);
-                    
-                    mockProcess._simulateExecution = () => {
-                        setTimeout(() => {
-                            mockProcess.stdout.emit('data', '62706c697374303000000000\n');
-                            mockProcess.emit('close', 0);
-                        }, 10);
-                    };
-                    
-                    return mockProcess;
-                } else if (command === '/usr/bin/xattr') {
+                const tagPath = process.env.TAG_PATH || '/opt/homebrew/bin/tag';
+                if (command === tagPath) {
+                    tagArgs = args;
                     const mockProcess = new MockSpawn(command, args, options);
                     
                     mockProcess._simulateExecution = () => {
@@ -325,13 +236,15 @@ describe('macOS Finder Tags', () => {
                     
                     return mockProcess;
                 }
+                // Fallback to prevent undefined
+                return new MockSpawn(command, args, options);
             });
 
             const result = await writeFinderTags(testFilePath, []);
             
             expect(result).toBe(true);
-            // Should call python with empty tag list (just the empty string at the end)
-            expect(pythonArgs[pythonArgs.length - 1]).toBe('');
+            // Should call tag with --set and empty string for tags
+            expect(tagArgs).toEqual(['--set', '', testFilePath]);
         });
     });
 });

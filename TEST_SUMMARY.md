@@ -7,47 +7,44 @@ This document summarizes the comprehensive unit tests created for the macOS Find
 ### 1. `readFinderTags` Function Tests (`tests/macos-tags.test.js`)
 
 ✅ **Correctly extracts tags from a file**
-- Tests that the function properly parses xattr metadata and returns tag array
-- Verifies subprocess command calls and arguments
+- Tests that the function properly parses tag tool output and returns tag array
+- Verifies subprocess command calls to the `tag` CLI tool
+- Validates correct arguments: `--list`, `--no-name`, and file path
 
 ✅ **Returns empty array when file has no tags**
 - Tests graceful handling of files without Finder tags
 - Ensures empty responses are handled correctly
 
 ✅ **Handles subprocess errors gracefully**
-- Tests behavior when xattr command fails (file has no metadata)
+- Tests behavior when tag command fails (file has no metadata or tool not installed)
 - Ensures function doesn't crash and returns empty array
 
 ✅ **Filters out empty tags and trims whitespace**
-- Tests that messy output with whitespace and empty lines is cleaned up
+- Tests that messy comma-separated output with whitespace is cleaned up
 - Verifies tag array only contains valid, trimmed tag names
 
-✅ **Writes correct Python code to stdin**
-- Validates the Python script sent to subprocess
-- Ensures proper xattr commands and plist parsing code
+✅ **Calls tag CLI with correct arguments**
+- Validates the `tag` tool is called with proper arguments
+- Ensures correct file path is passed to the tool
 
 ### 2. `writeFinderTags` Function Tests (`tests/macos-tags.test.js`)
 
 ✅ **Correctly applies a list of tags to a file**
-- Tests the two-stage process: Python encoding + xattr setting
-- Verifies subprocess command arguments and execution order
-- Validates hex encoding output
+- Tests the `tag --set` command with comma-separated tag list
+- Verifies subprocess command arguments (command path, tags string, file path)
+- Validates tags are joined correctly with commas
 
 ✅ **Can clear existing tags from a file**
 - Tests setting empty tag array to remove all tags
-- Ensures proper encoding of empty plist
+- Ensures proper handling of empty string tag argument
 
-✅ **Rejects when Python encoding fails**
-- Tests error handling when plist encoding fails
-- Ensures proper error message propagation
-
-✅ **Rejects when xattr command fails**
-- Tests error handling when xattr system call fails
-- Validates specific error message for xattr failures
+✅ **Rejects when tag command fails**
+- Tests error handling when `tag` command fails (tool not installed or permission error)
+- Ensures proper error message propagation with exit code
 
 ✅ **Handles empty tag array correctly**
 - Tests edge case of setting no tags (clearing)
-- Validates Python subprocess arguments
+- Validates tag command is called with empty string for tags parameter
 
 ### 3. GET `/api/macos/tag` Endpoint Tests (`tests/macos-tags-api.test.js`)
 
@@ -150,17 +147,18 @@ This document summarizes the comprehensive unit tests created for the macOS Find
 - Isolated temporary directories for each test
 - Automatic cleanup of test artifacts
 - Cross-platform compatibility (tests run on any platform)
-- No actual xattr/Python dependencies required for testing
+- No actual `tag` CLI tool dependency required for testing
+- Mocks simulate the `tag` tool behavior for both read and write operations
 
 ## Key Testing Achievements
 
 1. **100% Function Coverage**: Every function and code path tested
 2. **Security Validation**: Path traversal attacks prevented and tested
 3. **Error Handling**: Comprehensive error condition coverage
-4. **Cross-Platform**: Tests run on any platform without macOS dependencies
+4. **Cross-Platform**: Tests run on any platform without `tag` CLI tool or macOS dependencies
 5. **Edge Cases**: Empty inputs, malformed data, and boundary conditions
 6. **Integration Testing**: Full HTTP request/response cycle validation
-7. **Subprocess Mocking**: Complex child_process.spawn simulation
+7. **Subprocess Mocking**: Complex child_process.spawn simulation for `tag` CLI tool
 8. **Real-world Scenarios**: Practical usage patterns and error conditions
 
 ## Running the Tests
