@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/blashbrook/folder-gallery/compare/v1.4.0...v1.4.1) (2025-10-26)
+
+
+### Bug Fixes
+
+* update server runner ([8ddce6d](https://github.com/blashbrook/folder-gallery/commit/8ddce6d427726b2843944e6b9962eeef72920693))
+
 # [1.4.0](https://github.com/blashbrook/folder-gallery/compare/v1.3.2...v1.4.0) (2025-10-26)
 
 
