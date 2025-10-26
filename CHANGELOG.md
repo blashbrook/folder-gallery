@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/blashbrook/folder-gallery/compare/v1.7.0...v1.7.1) (2025-10-26)
+
+
+### Bug Fixes
+
+* include macos-tags.js in npm package ([a786d5c](https://github.com/blashbrook/folder-gallery/commit/a786d5cf887b8e57f7b367f1b154946011b87c3f))
+
 # [1.7.0](https://github.com/blashbrook/folder-gallery/compare/v1.6.3...v1.7.0) (2025-10-26)
 
 
