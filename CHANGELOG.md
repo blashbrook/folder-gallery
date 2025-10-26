@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/blashbrook/folder-gallery/compare/v1.5.1...v1.6.0) (2025-10-26)
+
+
+### Features
+
+* add gallery list function to show all running galleries ([68eda01](https://github.com/blashbrook/folder-gallery/commit/68eda010258cd41297271854fd1d7357593ae35c))
+
 ## [1.5.1](https://github.com/blashbrook/folder-gallery/compare/v1.5.0...v1.5.1) (2025-10-26)
 
 
