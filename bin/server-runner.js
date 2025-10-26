@@ -37,8 +37,8 @@ async function openInBrowser(url) {
 const config = JSON.parse(process.argv[2]);
 const { scanDir, port, openBrowser, packageDir } = config;
 
-// Setup paths - everything goes in .gallery-cache in the working directory
-const GALLERY_CACHE_DIR = path.join(process.cwd(), '.gallery-cache');
+// Setup paths - everything goes in .gallery-cache inside the scan directory
+const GALLERY_CACHE_DIR = path.join(scanDir, '.gallery-cache');
 const METADATA_DIR = path.join(GALLERY_CACHE_DIR, 'metadata');
 const THUMBNAILS_DIR = path.join(GALLERY_CACHE_DIR, 'thumbnails');
 const HTML_FILE = path.join(GALLERY_CACHE_DIR, 'index.html');
@@ -2123,7 +2123,7 @@ async function generateIndexHTML() {
 </html>`;
     
     await fs.writeFile(HTML_FILE, htmlContent, 'utf8');
-    console.log(`✅ Generated index.html in .gallery-cache`);
+    console.log(`✅ Generated index.html: ${HTML_FILE}`);
 }
 
 // Write PID file for process management
@@ -2145,6 +2145,9 @@ async function setupServer() {
     
     // Serve static files from .gallery-cache
     app.use('/static', express.static(GALLERY_CACHE_DIR));
+    
+    // Also serve index.html at root from .gallery-cache
+    app.use('/', express.static(GALLERY_CACHE_DIR, { index: 'index.html' }));
     
     // Server-Sent Events endpoint
     app.get('/api/scan-progress', (req, res) => {
@@ -2398,10 +2401,11 @@ async function setupServer() {
         });
     });
     
-    // Serve individual images
-    app.get('/image/:path(*)', async (req, res) => {
+    // Serve individual images (regex wildcard to avoid path-to-regexp issues)
+    app.get(/^\/image\/(.*)$/i, async (req, res) => {
         try {
-            const imagePath = path.join(scanDir, decodeURIComponent(req.params.path));
+            const rel = req.params[0] || '';
+            const imagePath = path.join(scanDir, decodeURIComponent(rel));
             const resolvedPath = path.resolve(imagePath);
             const resolvedScanDir = path.resolve(scanDir);
             
@@ -2409,17 +2413,14 @@ async function setupServer() {
                 return res.status(403).json({ error: 'Access denied' });
             }
             
-            await fs.access(imagePath);
+            await fs.access(resolvedPath);
             res.sendFile(resolvedPath);
         } catch (error) {
             res.status(404).json({ error: 'Image not found' });
         }
     });
     
-    // Serve the main gallery page from .gallery-cache
-    app.get('/', (req, res) => {
-        res.sendFile(HTML_FILE);
-    });
+    // Root route is handled by static middleware above
     
     return app;
 }
