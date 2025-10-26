@@ -1,3 +1,46 @@
+# Proposed Release v1.11.0 (Express v5, jsdom v27, Jest tweaks)
+
+Date: 2025-10-26
+
+Summary
+- Runtime deps updated safely; test suite fully green (116/116)
+- Express upgraded to v5 with no code changes required
+- Moved DOM tests to use Jest’s jsdom environment (no direct jsdom import)
+- Upgraded jsdom to v27 (ESM) with Jest ESM support
+- Added TextEncoder/TextDecoder polyfill for tests
+- Kept rollback marker for dependency state
+
+Runtime dependency updates
+- express: ^4.21.2 → ^5.1.0
+- chokidar: ^3.x → ^4.0.3
+- commander: ^11.x → ^14.0.2
+- sharp: ^0.32.6 → ^0.34.4
+- Removed unused multer
+
+Dev dependency updates
+- semantic-release: ^22.x → ^25.0.1
+- @semantic-release/commit-analyzer: ^11.x → ^13.0.1
+- @semantic-release/github: ^9.x → ^12.0.0
+- @semantic-release/npm: ^11.x → ^13.1.1
+- @semantic-release/release-notes-generator: ^12.x → ^14.1.0
+- jsdom: ^23.x → ^27.0.1 (ESM)
+- jest-environment-jsdom: ^30.2.0 (added)
+
+Jest/test changes
+- Run Jest via Node with ESM modules: `node --experimental-vm-modules ./node_modules/jest/bin/jest.js`
+- Default testEnvironment remains `node`; DOM suites opt-in via `/** @jest-environment jsdom */` pragma
+- Updated DOM tests to use `document.body.innerHTML` instead of constructing JSDOM directly
+- Polyfilled TextEncoder/TextDecoder in tests/setup.js for libraries expecting them
+
+Rollback
+- Snapshot saved at ROLLBACK_MARKER.json (pre-Express5/jsdom27 state)
+
+Validation
+- npm install: OK, audit: 0 vulnerabilities
+- npm test: 8/8 suites passing, 116/116 tests passing
+
+---
+
 # Recent Changes - Test Infrastructure Improvements
 
 **Date**: October 26, 2025  

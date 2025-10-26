@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 /**
  * Unit tests for updateTagButton functionality
  * 
@@ -7,10 +8,8 @@
  * - Integration with saveTags (saving tags)
  */
 
-const { JSDOM } = require('jsdom');
-
 describe('updateTagButton Function', () => {
-    let dom, window, document;
+    let window, document;
     let mockFetch;
     let originalConsole;
     
@@ -42,8 +41,10 @@ describe('updateTagButton Function', () => {
             error: jest.fn()
         };
 
-        // Create a JSDOM environment with our HTML structure
-        dom = new JSDOM(`
+        // Populate document with our HTML structure
+        document = global.document;
+        window = global.window;
+        document.body.innerHTML = `
             <!DOCTYPE html>
             <html>
             <head></head>
@@ -68,14 +69,7 @@ describe('updateTagButton Function', () => {
                 </div>
             </body>
             </html>
-        `, {
-            url: 'http://localhost:3000',
-            pretendToBeVisual: true,
-            resources: 'usable'
-        });
-
-        window = dom.window;
-        document = window.document;
+        `;
         
         // Mock fetch
         mockFetch = jest.fn();
@@ -190,9 +184,7 @@ describe('updateTagButton Function', () => {
             } catch {}
         };
 
-        // Make DOM globally available for functions
-        global.document = document;
-        global.window = window;
+        // fetch will be provided globally below
     });
 
     afterEach(() => {
@@ -200,9 +192,7 @@ describe('updateTagButton Function', () => {
         global.console = originalConsole;
         
         // Clean up DOM
-        dom.window.close();
-        delete global.document;
-        delete global.window;
+        document.body.innerHTML = '';
         delete global.fetch;
     });
 

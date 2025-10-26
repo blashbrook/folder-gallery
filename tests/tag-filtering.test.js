@@ -1,3 +1,4 @@
+/** @jest-environment jsdom */
 /**
  * Unit tests for tag filtering functionality
  * 
@@ -8,10 +9,8 @@
  * - applyTagFilters: Updates filter button appearance and triggers filtering
  */
 
-const { JSDOM } = require('jsdom');
-
 describe('Tag Filtering Functions', () => {
-    let dom, window, document;
+    let window, document;
     let mockFetch;
     let originalConsole;
     
@@ -42,8 +41,10 @@ describe('Tag Filtering Functions', () => {
             error: jest.fn()
         };
 
-        // Create a JSDOM environment with our HTML structure
-        dom = new JSDOM(`
+        // Populate document with our HTML structure
+        document = global.document;
+        window = global.window;
+        document.body.innerHTML = `
             <!DOCTYPE html>
             <html>
             <head></head>
@@ -90,14 +91,7 @@ describe('Tag Filtering Functions', () => {
                 </div>
             </body>
             </html>
-        `, {
-            url: 'http://localhost:3000',
-            pretendToBeVisual: true,
-            resources: 'usable'
-        });
-
-        window = dom.window;
-        document = window.document;
+        `;
         
         // Mock fetch
         mockFetch = jest.fn();
@@ -266,9 +260,7 @@ describe('Tag Filtering Functions', () => {
             applyTagFilters();
         };
 
-        // Make DOM globally available for functions
-        global.document = document;
-        global.window = window;
+        // Make fetch globally available for functions
     });
 
     afterEach(() => {
@@ -276,9 +268,7 @@ describe('Tag Filtering Functions', () => {
         global.console = originalConsole;
         
         // Clean up DOM
-        dom.window.close();
-        delete global.document;
-        delete global.window;
+        document.body.innerHTML = '';
         delete global.fetch;
     });
 
