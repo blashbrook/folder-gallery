@@ -1232,7 +1232,7 @@ async function generateIndexHTML() {
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
             </button>
-            <button class="header-btn" id="filterTagsBtn" onclick="toggleTagFilter()" style="display:none;" title="Filter by Tags">
+            <button class="header-btn" id="filterTagsBtn" onclick="toggleTagFilter()" title="Filter by Tags">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20.59 13.41L11 3H4v7l9.59 9.59a2 2 0 0 0 2.83 0l4.17-4.17a2 2 0 0 0 0-2.83z"></path>
                     <circle cx="6.5" cy="6.5" r="1.5"></circle>
@@ -1407,7 +1407,7 @@ async function generateIndexHTML() {
             // Show tag filter button if we have any tags
             const tagFilterBtn = document.getElementById('filterTagsBtn');
             if (tagFilterBtn) {
-                tagFilterBtn.style.display = (isMac && tagCommandAvailable) ? '' : 'none';
+                tagFilterBtn.style.display = isMac ? '' : 'none';
             }
             // Populate dropdown (will show a message if no tags)
             populateTagFilterDropdown();

@@ -1232,7 +1232,7 @@ async function generateIndexHTML() {
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
             </button>
-            <button class="header-btn" id="filterTagsBtn" onclick="toggleTagFilter()" style="display:none;" title="Filter by Tags">
+            <button class="header-btn" id="filterTagsBtn" onclick="toggleTagFilter()" title="Filter by Tags">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20.59 13.41L11 3H4v7l9.59 9.59a2 2 0 0 0 2.83 0l4.17-4.17a2 2 0 0 0 0-2.83z"></path>
                     <circle cx="6.5" cy="6.5" r="1.5"></circle>
@@ -1291,7 +1291,6 @@ async function generateIndexHTML() {
         const zoomInfo = document.getElementById('zoomInfo');
         const isMac = navigator.userAgent.includes('Mac OS X');
         let scale = 1, translateX = 0, translateY = 0, isDragging = false, lastX = 0, lastY = 0;
-        let tagCommandAvailable = false; // Will be set from API response
         const thumbnailCache = new Map();
         let heartedImages = new Set();
         let currentModalMedia = null;
@@ -1392,6 +1391,9 @@ async function generateIndexHTML() {
                         const data = await response.json();
             
             // Show/hide tag button based on availability
+            if (data.tagCommandAvailable) {
+                document.getElementById('tagBtn').style.display = 'flex';
+            }
                         if (data.tags && data.tags.length > 0) {
                             fileTags.set(relativePath, data.tags);
                             data.tags.forEach(tag => {
@@ -1407,7 +1409,7 @@ async function generateIndexHTML() {
             // Show tag filter button if we have any tags
             const tagFilterBtn = document.getElementById('filterTagsBtn');
             if (tagFilterBtn) {
-                tagFilterBtn.style.display = (isMac && tagCommandAvailable) ? '' : 'none';
+                tagFilterBtn.style.display = isMac ? '' : 'none';
             }
             // Populate dropdown (will show a message if no tags)
             populateTagFilterDropdown();
@@ -1562,8 +1564,6 @@ async function generateIndexHTML() {
             const data = await response.json();
             
             // Show/hide tag button based on availability
-            tagCommandAvailable = data.tagCommandAvailable;
-            console.log("Tag availability:", data.tagCommandAvailable);
             if (data.tagCommandAvailable) {
                 document.getElementById('tagBtn').style.display = 'flex';
             }
@@ -1764,6 +1764,9 @@ async function generateIndexHTML() {
                 const data = await response.json();
             
             // Show/hide tag button based on availability
+            if (data.tagCommandAvailable) {
+                document.getElementById('tagBtn').style.display = 'flex';
+            }
                 thumbnailsPaused = data.isPaused;
                 updatePauseButton();
             } catch (e) {
@@ -1833,8 +1836,7 @@ async function generateIndexHTML() {
             updateHeartButton();
             // Show Finder tag button only on macOS and for files (both images/videos are files)
             const tagBtn = document.getElementById('tagBtn');
-            console.log("Modal: isMac=", isMac, "tagCommandAvailable=", tagCommandAvailable);
-            if (isMac && tagCommandAvailable) { tagBtn.style.display = 'flex'; } else { tagBtn.remove(); }
+            if (isMac) { tagBtn.style.display = ''; } else { tagBtn.style.display = 'none'; }
             // Preload current Finder tags on macOS
             try {
                 currentTags = isMac ? await fetchTagsForCurrent() : [];

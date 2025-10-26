@@ -466,22 +466,6 @@ program
                 return;
             }
             
-            
-            // Check if tag command is available on macOS
-            if (process.platform === 'darwin') {
-                const { spawn } = require('child_process');
-                const tagPath = process.env.TAG_PATH || '/opt/homebrew/bin/tag';
-                const checkTag = spawn(tagPath, ['--version'], { stdio: 'ignore' });
-                let tagAvailable = false;
-                checkTag.on('error', () => {});
-                checkTag.on('close', () => { tagAvailable = true; });
-                await new Promise(r => setTimeout(r, 50));
-                
-                if (!tagAvailable) {
-                    console.log('⚠️  Note: macOS Finder tags disabled (optional)');
-                    console.log('💡 To enable tags, install: brew install tag');
-                }
-            }
             const result = await launchBackgroundServer(scanDir, port, openBrowser);
             console.log(`✅ Gallery server starting in background (PID: ${result.pid})`);
             // Wait briefly for server-info.json to appear
