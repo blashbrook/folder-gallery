@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/blashbrook/folder-gallery/compare/v1.9.0...v1.10.0) (2025-10-26)
+
+
+### Features
+
+* modify the actual size icon ([5dab518](https://github.com/blashbrook/folder-gallery/commit/5dab5185ae25cb19a97e83a47a8b40b1e4b5136a))
+
 # [1.9.0](https://github.com/blashbrook/folder-gallery/compare/v1.8.0...v1.9.0) (2025-10-26)
 
 
