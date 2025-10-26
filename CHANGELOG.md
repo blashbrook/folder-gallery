@@ -1,3 +1,16 @@
+# [1.4.0](https://github.com/blashbrook/folder-gallery/compare/v1.3.2...v1.4.0) (2025-10-26)
+
+
+### Bug Fixes
+
+* add tag icon to the header ([74f5ebd](https://github.com/blashbrook/folder-gallery/commit/74f5ebd92de13af6d3222ca40e0aebc461ee5340))
+* address test failures ([6bf7da9](https://github.com/blashbrook/folder-gallery/commit/6bf7da97ac2fc9daa7bc58cb09b4732858c3c5ab))
+
+
+### Features
+
+* add tests ([fcd7f86](https://github.com/blashbrook/folder-gallery/commit/fcd7f8683f55f700902f5101e8421e7e6be30965))
+
 ## [1.3.2](https://github.com/blashbrook/folder-gallery/compare/v1.3.1...v1.3.2) (2025-10-26)
 
 
