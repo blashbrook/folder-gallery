@@ -8,9 +8,22 @@ const fs = require('fs').promises;
 const path = require('path');
 const sharp = require('sharp');
 const net = require('net');
-const open = require('open').default;
 const chokidar = require('chokidar');
 const { execFile } = require('child_process');
+
+// ESM-only 'open' support via dynamic import to avoid require() ESM error
+let __openModule = null;
+async function openInBrowser(url) {
+    try {
+        if (!__openModule) {
+            const mod = await import('open');
+            __openModule = mod.default || mod;
+        }
+        return __openModule(url);
+    } catch (e) {
+        // Best-effort: ignore failures to open browser
+    }
+}
 
 // Configuration from command line arguments
 const config = JSON.parse(process.argv[2]);
@@ -21,6 +34,7 @@ const GALLERY_CACHE_DIR = path.join(process.cwd(), '.gallery-cache');
 const METADATA_DIR = path.join(GALLERY_CACHE_DIR, 'metadata');
 const THUMBNAILS_DIR = path.join(GALLERY_CACHE_DIR, 'thumbnails');
 const HTML_FILE = path.join(GALLERY_CACHE_DIR, 'index.html');
+const SERVER_INFO_FILE = path.join(GALLERY_CACHE_DIR, 'server-info.json');
 
 // Supported media extensions
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff', '.svg'];
@@ -1575,7 +1589,7 @@ async function generateIndexHTML() {
             currentTags.forEach((t, idx) => {
                 const chip = document.createElement('span');
                 chip.className = 'tag-chip';
-                chip.innerHTML = `${t} <button title="Remove tag" aria-label="Remove tag">×</button>`;
+                chip.innerHTML = t + ' <button title="Remove tag" aria-label="Remove tag">×</button>';
                 chip.querySelector('button').onclick = () => {
                     currentTags.splice(idx, 1);
                     renderTagChips();
@@ -1598,7 +1612,7 @@ async function generateIndexHTML() {
         }
         async function fetchTagsForCurrent() {
             if (!currentModalMedia) return [];
-            const resp = await fetch(`/api/macos/tag?relativePath=${encodeURIComponent(currentModalMedia.relativePath)}`);
+            const resp = await fetch('/api/macos/tag?relativePath=' + encodeURIComponent(currentModalMedia.relativePath));
             if (!resp.ok) return [];
             const data = await resp.json().catch(() => ({}));
             return Array.isArray(data.tags) ? data.tags : [];
@@ -1631,27 +1645,7 @@ async function generateIndexHTML() {
                 alert('Failed to save tags');
             }
         };
-            if (!currentModalMedia) return;
-            const input = prompt('Enter Finder tags (comma-separated):');
-            if (!input) return;
-            const tags = input.split(',').map(s => s.trim()).filter(Boolean);
-            if (tags.length === 0) return;
-            try {
-                const resp = await fetch('/api/macos/tag', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ relativePath: currentModalMedia.relativePath, tags })
-                });
-                const data = await resp.json().catch(() => ({}));
-                if (!resp.ok || !data.ok) {
-                    alert('Failed to tag in Finder' + (data.error ? `: ${data.error}` : ''));
-                } else {
-                    alert('Tagged in Finder');
-                }
-            } catch (e) {
-                alert('Failed to tag in Finder');
-            }
-        };
+        
         document.getElementById('heartBtn').onclick = () => {
             if (currentModalMedia) {
                 toggleHeart(currentModalMedia.relativePath, document.getElementById('heartBtn'));
@@ -1881,6 +1875,7 @@ async function setupServer() {
     app.get('/api/debug', (req, res) => {
         res.json({
             serverStatus: 'running',
+            port: actualPort,
             scanningState,
             galleryCache: {
                 hasData: !!galleryCache.data,
@@ -1931,13 +1926,21 @@ async function startServer() {
         const app = await setupServer();
         actualPort = await findAvailablePort(port);
         
-        server = app.listen(actualPort, () => {
+        server = app.listen(actualPort, async () => {
             console.log(`▦ Gallery server started on http://localhost:${actualPort}`);
             console.log(`📁 Scanning: ${scanDir}`);
-            
+            // Persist server info for CLI to read actual port
+            try {
+                await fs.writeFile(SERVER_INFO_FILE, JSON.stringify({
+                    port: actualPort,
+                    pid: process.pid,
+                    scanDir,
+                    startedAt: Date.now()
+                }), 'utf8');
+            } catch {}
             if (openBrowser) {
                 setTimeout(() => {
-                    open(`http://localhost:${actualPort}`);
+                    openInBrowser(`http://localhost:${actualPort}`);
                 }, 1000);
             }
         });

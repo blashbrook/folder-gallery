@@ -6,8 +6,21 @@ const fs = require('fs').promises;
 const path = require('path');
 const sharp = require('sharp');
 const net = require('net');
-const open = require('open').default;
 const { spawn, fork } = require('child_process');
+
+// ESM-only 'open' support via dynamic import to avoid require() ESM error
+let __openModule = null;
+async function openInBrowser(url) {
+    try {
+        if (!__openModule) {
+            const mod = await import('open');
+            __openModule = mod.default || mod;
+        }
+        return __openModule(url);
+    } catch (e) {
+        // Best-effort: ignore failures to open browser
+    }
+}
 
 const program = new Command();
 
@@ -233,7 +246,7 @@ async function launchBackgroundServer(scanDir, port, openBrowser = true) {
     const child = spawn('node', [serverRunnerPath, JSON.stringify(config)], {
         detached: true,
         stdio: ['ignore', 'ignore', 'ignore'], // Fully detach all stdio
-        cwd: process.cwd()
+        cwd: scanDir
     });
     
     // Let the process run independently
@@ -404,6 +417,16 @@ program
 .description('Folder Gallery CLI')
     .version('1.0.0');
 
+async function readServerInfo(directory = process.cwd()) {
+    const infoPath = path.join(directory, '.gallery-cache', 'server-info.json');
+    try {
+        const raw = await fs.readFile(infoPath, 'utf8');
+        return JSON.parse(raw);
+    } catch {
+        return null;
+    }
+}
+
 program
     .command('up')
     .description('Start the gallery server')
@@ -417,14 +440,15 @@ program
         
         try {
             // Check if server is already running in this directory
-            const existingPid = await readPidFile(process.cwd());
+            const existingPid = await readPidFile(scanDir);
             if (existingPid && isProcessRunning(existingPid)) {
                 console.log(`⚠️  Gallery server already running (PID: ${existingPid})`);
                 if (openBrowser) {
-                    // Try to determine the port and open browser
-                    // For simplicity, we'll just use the default port
+                    // Open actual port if we can read it
+                    const info = await readServerInfo(scanDir);
+                    const actual = info?.port || port;
                     setTimeout(() => {
-                        open(`http://localhost:${port}`);
+                        openInBrowser(`http://localhost:${actual}`);
                     }, 500);
                 }
                 return;
@@ -432,8 +456,22 @@ program
             
             const result = await launchBackgroundServer(scanDir, port, openBrowser);
             console.log(`✅ Gallery server starting in background (PID: ${result.pid})`);
-            console.log(`🌐 Server will be available at: http://localhost:${port}`);
+            // Wait briefly for server-info.json to appear
+            let actualPort = port;
+            const start = Date.now();
+            while (Date.now() - start < 5000) {
+                const info = await readServerInfo(scanDir);
+                if (info?.port) { actualPort = info.port; break; }
+                await new Promise(r => setTimeout(r, 200));
+            }
+            console.log(`🌐 Server will be available at: http://localhost:${actualPort}`);
             console.log('💡 Use "gallery down" to stop the server');
+
+            if (openBrowser) {
+                setTimeout(() => {
+                    openInBrowser(`http://localhost:${actualPort}`);
+                }, 500);
+            }
             
             // Exit the CLI process to return control to the terminal
             process.exit(0);
@@ -517,20 +555,20 @@ program
                 return;
             }
             
-            // Try to trigger rescan via API
-            const response = await fetch('http://localhost:3000/api/rescan', {
-                method: 'POST'
-            }).catch(async () => {
-                // Try other common ports if 3000 fails
-                for (let port = 3001; port <= 3010; port++) {
-                    try {
-                        return await fetch(`http://localhost:${port}/api/rescan`, { method: 'POST' });
-                    } catch {
-                        continue;
-                    }
-                }
-                throw new Error('Could not connect to gallery server');
-            });
+            // Try to trigger rescan via API using recorded port
+            const info = await readServerInfo(process.cwd());
+            const tryPorts = [];
+            if (info?.port) tryPorts.push(info.port);
+            tryPorts.push(3000);
+            for (let p = 3001; p <= 3010; p++) tryPorts.push(p);
+            let response;
+            for (const p of tryPorts) {
+                try {
+                    response = await fetch(`http://localhost:${p}/api/rescan`, { method: 'POST' });
+                    if (response.ok) break;
+                } catch {}
+            }
+            if (!response) throw new Error('Could not connect to gallery server');
             
             if (response.ok) {
                 const result = await response.json();
