@@ -1,3 +1,10 @@
+## [1.3.2](https://github.com/blashbrook/folder-gallery/compare/v1.3.1...v1.3.2) (2025-10-26)
+
+
+### Bug Fixes
+
+* update release workflow ([ac72841](https://github.com/blashbrook/folder-gallery/commit/ac72841e5ef0a6f1a782e1447684db9b5fac7afa))
+
 ## [1.3.1](https://github.com/blashbrook/folder-gallery/compare/v1.3.0...v1.3.1) (2025-10-26)
 
 
