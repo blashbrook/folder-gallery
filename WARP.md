@@ -57,6 +57,7 @@ This is a lightweight Node.js CLI tool that creates dynamic image galleries from
 - **bin/server-runner.js**: Background server process spawned by CLI - runs detached from terminal
 - **server.js**: Legacy standalone server (kept for backwards compatibility)
 - **metadata.js**: MetadataManager class for storing/retrieving image metadata as JSON files
+- **macos-tags.js**: macOS Finder tags utility module with `readFinderTags()` and `writeFinderTags()` functions
 
 ### Dynamic Cache System (`.gallery-cache/`)
 All generated files are stored in a `.gallery-cache` directory created in the current working directory:
@@ -354,7 +355,42 @@ npm run dev
 - `GET /api/debug`: Server diagnostics (PID, uptime, memory, connections)
 - `GET /`: Main gallery interface (serves `.gallery-cache/index.html`)
 
-### Metadata System (Future Feature)
+#### macOS Finder Tags API (macOS only)
+- `GET /api/macos/tag?relativePath=<path>`: Read Finder tags from a file
+- `POST /api/macos/tag`: Set Finder tags on a file (requires `{relativePath, tags}` JSON payload)
+
+These endpoints use native macOS `xattr` commands via Python subprocess to read/write the `com.apple.metadata:_kMDItemUserTags` extended attribute. On non-macOS platforms, the GET endpoint returns empty tags and POST returns an error.
+
+### macOS Finder Tags Implementation
+
+The macOS Finder tags functionality is implemented through a dedicated module (`macos-tags.js`) that provides:
+
+#### Core Functions
+- **`readFinderTags(filePath)`**: Reads Finder tags from a file using native macOS xattr commands
+- **`writeFinderTags(filePath, tags)`**: Writes Finder tags to a file using Python plist encoding + xattr
+
+#### Implementation Details
+- Uses Python subprocess to read/write binary plist data from xattr extended attributes
+- Gracefully handles files without tags (returns empty array)
+- Platform-aware: automatically disabled on non-macOS systems
+- Security: Path validation prevents access outside scan directory
+- Error handling: Robust subprocess error recovery
+
+#### User Interface Integration
+- Modal viewer includes tag editor button (🏷️) on macOS
+- Click to open tag editor overlay with current tags
+- Add tags by typing and pressing Enter
+- Remove tags by clicking × button on tag chips
+- Save button commits changes and closes editor
+- Real-time tag persistence to Finder metadata
+
+#### Technical Architecture
+```
+Frontend (Modal) → POST /api/macos/tag → writeFinderTags() → Python subprocess → xattr command
+Frontend (Load) ← GET /api/macos/tag ← readFinderTags() ← Python subprocess ← xattr read
+```
+
+### Caching System
 - JSON files stored in `.gallery-cache/metadata/` directory
 - Filename: Base64-encoded relative image path + `.json`
 - Default structure: tags, description, rating, lastUpdated
@@ -797,6 +833,11 @@ When adding new functionality, follow these patterns:
 - **chokidar**: File system watcher with intelligent debouncing
 - **multer**: File upload handling (imported but not actively used)
 
+#### Development Dependencies
+- **jest**: Testing framework with comprehensive mocking capabilities
+- **supertest**: HTTP endpoint testing library for REST API validation
+- **@semantic-release/***: Automated release management and changelog generation
+
 ### Directory Exclusions
 - Hidden directories (starting with `.`)
 - `node_modules` directories
@@ -814,6 +855,63 @@ When adding new functionality, follow these patterns:
 - Auto-finds available port starting from requested port
 - Checks up to 100 sequential ports
 - Uses native Node.js `net` module for port testing
+
+## Testing Infrastructure
+
+### Test Framework
+The project uses **Jest** as the primary testing framework with **Supertest** for HTTP endpoint testing. Tests are located in the `tests/` directory and can be run with `npm test`.
+
+### Test Structure
+```
+tests/
+├── setup.js              # Global test configuration and cleanup
+├── test-utils.js          # Testing utilities and custom mocks
+├── macos-tags.test.js     # Unit tests for macOS Finder tags functions
+└── macos-tags-api.test.js # Integration tests for macOS tags REST API
+```
+
+### Key Testing Features
+- **Cross-platform mocking**: Tests run on any platform without macOS dependencies
+- **Subprocess simulation**: MockSpawn class simulates `child_process.spawn` for xattr/Python calls
+- **Security testing**: Validates protection against path traversal attacks
+- **Error handling**: Comprehensive coverage of failure scenarios
+- **API integration**: Full HTTP request/response cycle testing
+
+### Running Tests
+```bash
+# Run all tests
+npm test
+
+# Run with coverage report
+npm run test:coverage
+
+# Run in watch mode during development
+npm run test:watch
+
+# Run specific test file
+npx jest tests/macos-tags.test.js
+```
+
+### Test Coverage Areas
+1. **macOS Finder Tags Functions** (`readFinderTags`, `writeFinderTags`)
+   - Tag extraction from xattr metadata
+   - Tag writing via Python plist encoding + xattr
+   - Error handling for subprocess failures
+   - Edge cases (empty tags, malformed data)
+
+2. **macOS Tags API Endpoints** (`GET/POST /api/macos/tag`)
+   - Successful tag read/write operations
+   - Input validation and security (path traversal prevention)
+   - Platform compatibility (non-macOS behavior)
+   - Error handling and graceful degradation
+
+### Mock Architecture
+- **MockSpawn**: Custom EventEmitter simulating child_process.spawn
+- **Platform mocking**: Temporary process.platform override for cross-platform tests
+- **File system mocking**: Temporary directories and test file creation
+- **HTTP mocking**: Supertest integration for API endpoint testing
+
+See `TEST_SUMMARY.md` for detailed test case documentation.
 
 ## Environment Variables
 - `PORT`: Server port (default: 3000)
