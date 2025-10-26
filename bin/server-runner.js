@@ -10,6 +10,7 @@ const sharp = require('sharp');
 const net = require('net');
 const open = require('open').default;
 const chokidar = require('chokidar');
+const { execFile } = require('child_process');
 
 // Configuration from command line arguments
 const config = JSON.parse(process.argv[2]);
@@ -1022,6 +1023,64 @@ async function generateIndexHTML() {
             box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: none;
         }
         .zoom-info.active { display: block; }
+        /* Glassmorphic tag editor panel */
+        .tag-editor {
+            position: fixed;
+            bottom: 96px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            align-items: center;
+            gap: 8px;
+            background: var(--button-bg);
+            color: var(--button-text);
+            border: 2px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 10px 12px;
+            z-index: 2001;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .tag-editor.active { display: flex; }
+        .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.35);
+            background: rgba(255,255,255,0.12);
+            color: var(--button-text);
+            font-size: 12px;
+        }
+        .tag-chip button {
+            all: unset;
+            cursor: pointer;
+            width: 16px; height: 16px;
+            display: inline-flex; align-items: center; justify-content: center;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+        }
+        .tag-input {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.35);
+            color: var(--button-text);
+            border-radius: 16px;
+            padding: 6px 10px;
+            font-size: 12px;
+            outline: none;
+            min-width: 140px;
+        }
+        .tag-save {
+            background: var(--button-bg);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: var(--button-text);
+            border-radius: 16px;
+            padding: 6px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .tag-save:hover { background: var(--button-bg-hover); }
         @media (max-width: 1200px) { .gallery { column-count: 4; } }
         @media (max-width: 900px) { .gallery { column-count: 3; } }
         @media (max-width: 600px) { .gallery { column-count: 2; } }
@@ -1087,10 +1146,21 @@ async function generateIndexHTML() {
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
             </button>
+            <button class="zoom-btn" id="tagBtn" title="Tag in Finder" style="display:none;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.59 13.41L11 3H4v7l9.59 9.59a2 2 0 0 0 2.83 0l4.17-4.17a2 2 0 0 0 0-2.83z"></path>
+                    <circle cx="6.5" cy="6.5" r="1.5"></circle>
+                </svg>
+            </button>
             <button class="zoom-btn" id="zoomOut" title="Zoom Out">−</button>
             <button class="zoom-btn" id="resetZoom" title="Reset Zoom">⌂</button>
             <button class="zoom-btn" id="zoomIn" title="Zoom In">+</button>
             <button class="zoom-btn" id="nextBtn" title="Next">›</button>
+        </div>
+        <div class="tag-editor" id="tagEditor" aria-hidden="true">
+            <div id="tagChips" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+            <input id="tagInput" class="tag-input" type="text" placeholder="Add tag…" title="Add tag" />
+            <button id="tagSave" class="tag-save" title="Save tags">Save</button>
         </div>
     </div>
     <script>
@@ -1099,6 +1169,7 @@ async function generateIndexHTML() {
         const modalVideo = document.getElementById('modalVideo');
         const zoomControls = document.getElementById('zoomControls');
         const zoomInfo = document.getElementById('zoomInfo');
+        const isMac = navigator.userAgent.includes('Mac OS X');
         let scale = 1, translateX = 0, translateY = 0, isDragging = false, lastX = 0, lastY = 0;
         const thumbnailCache = new Map();
         let heartedImages = new Set();
@@ -1108,6 +1179,7 @@ async function generateIndexHTML() {
         const modalMediaList = [];
         const mediaIndexMap = new Map();
         let currentIndex = -1;
+        let currentTags = [];
         
         function loadHearts() {
             const saved = localStorage.getItem('heartedImages');
@@ -1418,7 +1490,7 @@ async function generateIndexHTML() {
             }
         }
         
-        function openModal(media) {
+        async function openModal(media) {
             // Pause any playing video before switching
             if (modalVideo && modalVideo.style.display === 'block') {
                 try { modalVideo.pause(); } catch {}
@@ -1441,6 +1513,14 @@ async function generateIndexHTML() {
             }
             modal.classList.add('active');
             updateHeartButton();
+            // Show Finder tag button only on macOS and for files (both images/videos are files)
+            const tagBtn = document.getElementById('tagBtn');
+            if (isMac) { tagBtn.style.display = ''; } else { tagBtn.style.display = 'none'; }
+            // Preload current Finder tags on macOS
+            try {
+                currentTags = isMac ? await fetchTagsForCurrent() : [];
+                renderTagChips();
+            } catch {}
         }
         
         function showAtIndex(idx) {
@@ -1456,6 +1536,7 @@ async function generateIndexHTML() {
         function showNext() { showAtIndex(currentIndex + 1); }
         
         function closeModal() {
+            hideTagEditor();
             modal.classList.remove('active');
             if (modalVideo.style.display === 'block') { modalVideo.pause(); modalVideo.src = ''; }
             modalImg.src = ''; resetZoom();
@@ -1482,6 +1563,95 @@ async function generateIndexHTML() {
         document.getElementById('resetZoom').onclick = resetZoom;
         document.getElementById('prevBtn').onclick = showPrev;
         document.getElementById('nextBtn').onclick = showNext;
+        document.getElementById('tagBtn').onclick = () => {
+            toggleTagEditor();
+        };
+        const tagEditor = document.getElementById('tagEditor');
+        const tagChips = document.getElementById('tagChips');
+        const tagInput = document.getElementById('tagInput');
+        const tagSave = document.getElementById('tagSave');
+        function renderTagChips() {
+            tagChips.innerHTML = '';
+            currentTags.forEach((t, idx) => {
+                const chip = document.createElement('span');
+                chip.className = 'tag-chip';
+                chip.innerHTML = `${t} <button title="Remove tag" aria-label="Remove tag">×</button>`;
+                chip.querySelector('button').onclick = () => {
+                    currentTags.splice(idx, 1);
+                    renderTagChips();
+                };
+                tagChips.appendChild(chip);
+            });
+        }
+        function showTagEditor() {
+            if (!isMac || !currentModalMedia) return;
+            tagEditor.classList.add('active');
+            tagEditor.setAttribute('aria-hidden', 'false');
+            setTimeout(() => tagInput.focus(), 0);
+        }
+        function hideTagEditor() {
+            tagEditor.classList.remove('active');
+            tagEditor.setAttribute('aria-hidden', 'true');
+        }
+        function toggleTagEditor() {
+            if (tagEditor.classList.contains('active')) hideTagEditor(); else showTagEditor();
+        }
+        async function fetchTagsForCurrent() {
+            if (!currentModalMedia) return [];
+            const resp = await fetch(`/api/macos/tag?relativePath=${encodeURIComponent(currentModalMedia.relativePath)}`);
+            if (!resp.ok) return [];
+            const data = await resp.json().catch(() => ({}));
+            return Array.isArray(data.tags) ? data.tags : [];
+        }
+        tagInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const v = tagInput.value.trim();
+                if (v && !currentTags.includes(v)) {
+                    currentTags.push(v);
+                    renderTagChips();
+                }
+                tagInput.value = '';
+            }
+        });
+        tagSave.onclick = async () => {
+            if (!currentModalMedia) return;
+            try {
+                const resp = await fetch('/api/macos/tag', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ relativePath: currentModalMedia.relativePath, tags: currentTags })
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (resp.ok && data.ok) {
+                    hideTagEditor();
+                } else {
+                    alert('Failed to save tags');
+                }
+            } catch {
+                alert('Failed to save tags');
+            }
+        };
+            if (!currentModalMedia) return;
+            const input = prompt('Enter Finder tags (comma-separated):');
+            if (!input) return;
+            const tags = input.split(',').map(s => s.trim()).filter(Boolean);
+            if (tags.length === 0) return;
+            try {
+                const resp = await fetch('/api/macos/tag', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ relativePath: currentModalMedia.relativePath, tags })
+                });
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok || !data.ok) {
+                    alert('Failed to tag in Finder' + (data.error ? `: ${data.error}` : ''));
+                } else {
+                    alert('Tagged in Finder');
+                }
+            } catch (e) {
+                alert('Failed to tag in Finder');
+            }
+        };
         document.getElementById('heartBtn').onclick = () => {
             if (currentModalMedia) {
                 toggleHeart(currentModalMedia.relativePath, document.getElementById('heartBtn'));
@@ -1586,6 +1756,89 @@ async function setupServer() {
             isPaused 
         });
         res.json({ isPaused });
+    });
+
+    // macOS-only: Apply Finder tags to a file
+    function runAppleScript(script) {
+        return new Promise((resolve, reject) => {
+            execFile('osascript', ['-e', script], (err, stdout, stderr) => {
+                if (err) return reject(new Error((stderr || err.message).toString()));
+                resolve(stdout.toString());
+            });
+        });
+    }
+
+    app.get('/api/macos/tag', async (req, res) => {
+        if (process.platform !== 'darwin') {
+            return res.json({ tags: [] });
+        }
+        try {
+            const relativePath = req.query.relativePath;
+            if (!relativePath) return res.json({ tags: [] });
+            const imagePath = path.join(scanDir, relativePath);
+            const resolvedPath = path.resolve(imagePath);
+            const resolvedScanDir = path.resolve(scanDir);
+            if (!resolvedPath.startsWith(resolvedScanDir)) {
+                return res.status(403).json({ error: 'Access denied' });
+            }
+            await fs.access(resolvedPath);
+            const escPath = resolvedPath.replace(/\"/g, '\\"');
+            const script = `try
+                tell application "Finder"
+                    set theFile to (POSIX file "${escPath}") as alias
+                    set tnames to tag names of theFile
+                end tell
+                set AppleScript's text item delimiters to ","
+                return tnames as string
+            on error errMsg
+                return "ERROR:" & errMsg
+            end try`;
+            const out = await runAppleScript(script);
+            if (/^ERROR:/.test(out)) return res.json({ tags: [] });
+            const tags = out.trim() === '' ? [] : out.split(',').map(s => s.trim()).filter(Boolean);
+            res.json({ tags });
+        } catch (e) {
+            res.json({ tags: [] });
+        }
+    });
+
+    app.post('/api/macos/tag', express.json(), async (req, res) => {
+        if (process.platform !== 'darwin') {
+            return res.status(400).json({ error: 'Finder tagging only available on macOS' });
+        }
+        try {
+            const { relativePath, tags } = req.body || {};
+            if (!relativePath || !Array.isArray(tags) || tags.length === 0) {
+                return res.status(400).json({ error: 'relativePath and non-empty tags array required' });
+            }
+            const imagePath = path.join(scanDir, relativePath);
+            const resolvedPath = path.resolve(imagePath);
+            const resolvedScanDir = path.resolve(scanDir);
+            if (!resolvedPath.startsWith(resolvedScanDir)) {
+                return res.status(403).json({ error: 'Access denied' });
+            }
+            // Ensure file exists
+            await fs.access(resolvedPath);
+            // Build AppleScript to set tag names
+            const escPath = resolvedPath.replace(/"/g, '\\"');
+            const escTags = tags.map(t => `"${String(t).replace(/"/g, '\\"')}"`).join(', ');
+            const script = `try
+                tell application "Finder"
+                    set theFile to (POSIX file "${escPath}") as alias
+                    set tag names of theFile to {${escTags}}
+                end tell
+                return "OK"
+            on error errMsg
+                return errMsg
+            end try`;
+            const out = await runAppleScript(script);
+            if (!/OK/.test(out)) {
+                return res.status(500).json({ error: out.trim() || 'Failed to set tags' });
+            }
+            res.json({ ok: true });
+        } catch (e) {
+            res.status(500).json({ error: e.message || 'Failed to set Finder tags' });
+        }
     });
     
     // API endpoint to get gallery data (cached)
