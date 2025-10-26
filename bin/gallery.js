@@ -804,3 +804,10 @@ program
     });
 
 program.parse();
+
+// Export internals for testing only
+if (process.env.NODE_ENV === 'test') {
+    module.exports = {
+        launchBackgroundServer
+    };
+}
