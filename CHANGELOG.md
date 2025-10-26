@@ -1,3 +1,10 @@
+## [1.6.2](https://github.com/blashbrook/folder-gallery/compare/v1.6.1...v1.6.2) (2025-10-26)
+
+
+### Bug Fixes
+
+* update server runner ([5a38229](https://github.com/blashbrook/folder-gallery/commit/5a38229991e47373cea10e2c18b8734654171742))
+
 ## [1.6.1](https://github.com/blashbrook/folder-gallery/compare/v1.6.0...v1.6.1) (2025-10-26)
 
 
