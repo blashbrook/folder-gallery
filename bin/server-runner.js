@@ -2027,17 +2027,15 @@ async function setupServer() {
     async function readFinderTags(filePath) {
         return new Promise((resolve) => {
             const { spawn } = require('child_process');
-            // Prefer native xattr; if no attribute, return []
-            const py = spawn('python3', ['-'], { stdio: ['pipe', 'pipe', 'ignore'] });
-            const code = `import sys, plistlib, subprocess\n\npath = sys.argv[1]\ntry:\n    out = subprocess.check_output(['/usr/bin/xattr','-p','com.apple.metadata:_kMDItemUserTags', path])\n    arr = plistlib.loads(out)\n    for s in arr:\n        sys.stdout.write(str(s)+'\n')\nexcept subprocess.CalledProcessError:\n    pass\n`;
+            // Use python -c with file path as argv to avoid stdin/argv mismatch
+            const code = "import sys, plistlib, subprocess\npath = sys.argv[1]\ntry:\n    out = subprocess.check_output(['/usr/bin/xattr','-p','com.apple.metadata:_kMDItemUserTags', path])\n    arr = plistlib.loads(out)\n    for s in arr:\n        print(str(s))\nexcept subprocess.CalledProcessError:\n    pass\n";
+            const py = spawn('python3', ['-c', code, filePath], { stdio: ['ignore', 'pipe', 'ignore'] });
             let output = '';
             py.stdout.on('data', d => { output += d.toString(); });
             py.on('close', () => {
                 const tags = output.split('\n').map(s => s.trim()).filter(Boolean);
                 resolve(tags);
             });
-            py.stdin.write(code);
-            py.stdin.end(filePath + '\n');
         });
     }
 
