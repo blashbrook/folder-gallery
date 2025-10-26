@@ -20,9 +20,13 @@ async function openInBrowser(url) {
             const mod = await import('open');
             __openModule = mod.default || mod;
         }
-        return __openModule(url);
+        await __openModule(url);
+        console.log(`🌐 Opened browser: ${url}`);
+        return true;
     } catch (e) {
-        // Best-effort: ignore failures to open browser
+        console.warn(`⚠️  Failed to open browser automatically: ${e.message}`);
+        console.warn(`   Please open manually: ${url}`);
+        return false;
     }
 }
 

@@ -16,9 +16,13 @@ async function openInBrowser(url) {
             const mod = await import('open');
             __openModule = mod.default || mod;
         }
-        return __openModule(url);
+        await __openModule(url);
+        console.log(`🌐 Browser opened: ${url}`);
+        return true;
     } catch (e) {
-        // Best-effort: ignore failures to open browser
+        console.warn(`⚠️  Could not open browser automatically: ${e.message}`);
+        console.log(`   Open manually: ${url}`);
+        return false;
     }
 }
 
@@ -447,9 +451,7 @@ program
                     // Open actual port if we can read it
                     const info = await readServerInfo(scanDir);
                     const actual = info?.port || port;
-                    setTimeout(() => {
-                        openInBrowser(`http://localhost:${actual}`);
-                    }, 500);
+                    await openInBrowser(`http://localhost:${actual}`);
                 }
                 return;
             }
@@ -468,9 +470,9 @@ program
             console.log('💡 Use "gallery down" to stop the server');
 
             if (openBrowser) {
-                setTimeout(() => {
-                    openInBrowser(`http://localhost:${actualPort}`);
-                }, 500);
+                // Wait a bit for server to be ready, then open browser
+                await new Promise(r => setTimeout(r, 1000));
+                await openInBrowser(`http://localhost:${actualPort}`);
             }
             
             // Exit the CLI process to return control to the terminal
