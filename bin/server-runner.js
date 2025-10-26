@@ -1081,14 +1081,16 @@ async function generateIndexHTML() {
         <img class="modal-image" id="modalImage" style="display: none;">
         <video class="modal-video" id="modalVideo" controls style="display: none;"></video>
         <div class="zoom-controls" id="zoomControls">
+            <button class="zoom-btn" id="prevBtn" title="Previous">‹</button>
             <button class="zoom-btn" id="heartBtn" title="Favorite">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
             </button>
-            <button class="zoom-btn" id="zoomOut">−</button>
-            <button class="zoom-btn" id="resetZoom">⌂</button>
-            <button class="zoom-btn" id="zoomIn">+</button>
+            <button class="zoom-btn" id="zoomOut" title="Zoom Out">−</button>
+            <button class="zoom-btn" id="resetZoom" title="Reset Zoom">⌂</button>
+            <button class="zoom-btn" id="zoomIn" title="Zoom In">+</button>
+            <button class="zoom-btn" id="nextBtn" title="Next">›</button>
         </div>
     </div>
     <script>
@@ -1103,6 +1105,9 @@ async function generateIndexHTML() {
         let currentModalMedia = null;
         let showOnlyHearted = false;
         let thumbnailsPaused = false;
+        const modalMediaList = [];
+        const mediaIndexMap = new Map();
+        let currentIndex = -1;
         
         function loadHearts() {
             const saved = localStorage.getItem('heartedImages');
@@ -1208,6 +1213,10 @@ async function generateIndexHTML() {
                     const galleryItem = document.createElement('div');
                     galleryItem.className = 'gallery-item';
                     galleryItem.dataset.relativePath = item.relativePath;
+                    
+                    // Track order for modal navigation
+                    mediaIndexMap.set(item.relativePath, modalMediaList.length);
+                    modalMediaList.push(item);
                     
                     const heartBtn = document.createElement('button');
                     heartBtn.className = 'heart-btn';
@@ -1410,7 +1419,12 @@ async function generateIndexHTML() {
         }
         
         function openModal(media) {
+            // Pause any playing video before switching
+            if (modalVideo && modalVideo.style.display === 'block') {
+                try { modalVideo.pause(); } catch {}
+            }
             currentModalMedia = media;
+            currentIndex = mediaIndexMap.has(media.relativePath) ? mediaIndexMap.get(media.relativePath) : -1;
             if (media.type === 'video') {
                 modalImg.style.display = 'none';
                 modalVideo.style.display = 'block';
@@ -1429,6 +1443,18 @@ async function generateIndexHTML() {
             updateHeartButton();
         }
         
+        function showAtIndex(idx) {
+            if (modalMediaList.length === 0) return;
+            const wrapped = ((idx % modalMediaList.length) + modalMediaList.length) % modalMediaList.length;
+            const target = modalMediaList[wrapped];
+            if (target) {
+                openModal(target);
+            }
+        }
+        
+        function showPrev() { showAtIndex(currentIndex - 1); }
+        function showNext() { showAtIndex(currentIndex + 1); }
+        
         function closeModal() {
             modal.classList.remove('active');
             if (modalVideo.style.display === 'block') { modalVideo.pause(); modalVideo.src = ''; }
@@ -1445,10 +1471,17 @@ async function generateIndexHTML() {
         
         document.getElementById('closeModal').onclick = closeModal;
         modal.onclick = (e) => { if (e.target === modal) closeModal(); };
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+            if (!modal.classList.contains('active')) return;
+            if (e.key === 'ArrowLeft') { e.preventDefault(); showPrev(); }
+            if (e.key === 'ArrowRight') { e.preventDefault(); showNext(); }
+        });
         document.getElementById('zoomIn').onclick = () => zoom(0.2);
         document.getElementById('zoomOut').onclick = () => zoom(-0.2);
         document.getElementById('resetZoom').onclick = resetZoom;
+        document.getElementById('prevBtn').onclick = showPrev;
+        document.getElementById('nextBtn').onclick = showNext;
         document.getElementById('heartBtn').onclick = () => {
             if (currentModalMedia) {
                 toggleHeart(currentModalMedia.relativePath, document.getElementById('heartBtn'));
