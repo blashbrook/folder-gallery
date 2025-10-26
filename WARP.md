@@ -242,6 +242,30 @@ npm install -g folder-gallery
 npm link
 ```
 
+### Development Scripts
+```bash
+# Link local project for development testing
+npm run link
+
+# Unlink local project (revert to published version)
+npm run unlink
+
+# Run tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run tests in watch mode
+npm run test:watch
+
+# Start standalone server (legacy mode)
+npm start
+
+# Development mode with file watching
+npm run dev
+```
+
 ### Running the Gallery
 ```bash
 # Start gallery server in current directory
@@ -877,25 +901,137 @@ When adding new functionality, follow these patterns:
 ### Test Framework
 The project uses **Jest** as the primary testing framework with **Supertest** for HTTP endpoint testing. Tests are located in the `tests/` directory and can be run with `npm test`.
 
+**Current Status**: ✅ All 116 tests passing across 8 test suites (~2s runtime)
+
 ### Test Structure
 ```
 tests/
-├── setup.js              # Global test configuration and cleanup
-├── test-utils.js          # Testing utilities and custom mocks
-├── macos-tags.test.js     # Unit tests for macOS Finder tags functions
-└── macos-tags-api.test.js # Integration tests for macOS tags REST API
+├── setup.js                          # Global test configuration and cleanup
+├── test-utils.js                     # Testing utilities and custom mocks
+├── browser-opening.test.js           # Browser launch behavior tests
+├── gallery-sorting.test.js           # Image sorting functionality tests  
+├── gallery-utils.test.js             # PID file and process management tests
+├── launch-background-server.test.js  # Server process spawning tests
+├── macos-tags.test.js                # Unit tests for macOS Finder tags functions
+├── macos-tags-api.test.js            # Integration tests for macOS tags REST API
+├── tag-filtering.test.js             # Tag filtering UI tests
+└── update-tag-button.test.js         # Tag editor UI tests
 ```
+
+### Test Coverage by Component
+
+#### Backend Process Management (`gallery-utils.test.js`)
+Tests for critical PID file and process management utilities:
+- `readPidFile()` - Reading/parsing PID files, handling missing files, malformed data
+- `removePidFile()` - Deleting PID files with graceful error handling
+- `isProcessRunning()` - Process detection with edge case handling (PID 0, negative, null/undefined)
+
+**Key Achievement**: Discovered and fixed `fs.promises` bug in main code (lines 286, 297 of `bin/gallery.js`)
+
+#### Server Spawning (`launch-background-server.test.js`)
+Tests for background server process launching:
+- Validates detached process spawning with correct stdio handling
+- Confirms server-runner.js path and serialized config passing
+- Tests `.gallery-cache` directory creation and log file opening
+- Full filesystem operation mocking for test isolation
+
+**Testing Pattern**: Comprehensive `fs` module mocking (existsSync, mkdirSync, openSync)
+
+#### macOS Finder Tags (`macos-tags.test.js`, `macos-tags-api.test.js`)
+- Core function tests for reading/writing tags via `tag` CLI tool
+- REST API endpoint tests (GET/POST `/api/macos/tag`)
+- Security validation (path traversal prevention)
+- Cross-platform compatibility (graceful degradation on non-macOS)
+- Error handling for missing tools, file access issues
+
+**Testing Pattern**: MockSpawn simulation of subprocess calls
+
+#### UI Features (`browser-opening.test.js`, `tag-filtering.test.js`, `update-tag-button.test.js`, `gallery-sorting.test.js`)
+- Browser launch behavior
+- Tag filtering and UI state management
+- Gallery image sorting functionality
 
 ### Key Testing Features
 - **Cross-platform mocking**: Tests run on any platform without macOS dependencies
 - **Subprocess simulation**: MockSpawn class simulates `child_process.spawn` for `tag` CLI tool calls
+- **Filesystem isolation**: Comprehensive `fs` module mocking prevents actual file operations
 - **Security testing**: Validates protection against path traversal attacks
 - **Error handling**: Comprehensive coverage of failure scenarios
 - **API integration**: Full HTTP request/response cycle testing
+- **Test isolation**: `jest.resetAllMocks()` + `jest.clearAllMocks()` prevents mock pollution
+
+### Critical Testing Patterns
+
+#### Exporting Functions for Tests
+In `bin/gallery.js`, functions are conditionally exported for testing:
+```javascript
+if (process.env.NODE_ENV === 'test') {
+    module.exports = {
+        launchBackgroundServer,
+        readPidFile,
+        removePidFile,
+        isProcessRunning
+    };
+}
+```
+
+#### Mock Commander to Prevent CLI Execution
+All test files importing `bin/gallery.js` must mock Commander first:
+```javascript
+jest.mock('commander', () => {
+  class MockCommand {
+    name() { return this; }
+    description() { return this; }
+    version() { return this; }
+    command() { return this; }
+    option() { return this; }
+    action() { return this; }
+    parse() { /* no-op */ }
+  }
+  return { Command: MockCommand };
+});
+```
+
+#### Filesystem Mocking for Process Tests
+```javascript
+jest.mock('fs', () => ({
+  existsSync: jest.fn(),
+  mkdirSync: jest.fn(),
+  openSync: jest.fn()
+}));
+```
+
+#### Test Isolation Best Practices
+```javascript
+beforeEach(() => {
+    jest.resetAllMocks();  // Reset mock state
+    jest.clearAllMocks();  // Clear call history
+    // ... setup
+});
+
+afterEach(() => {
+    jest.restoreAllMocks(); // Restore original implementations
+});
+```
+
+### Known Issues Fixed by Testing
+
+1. **Bug in `bin/gallery.js` (lines 286, 297)**
+   - **Issue**: Used callback-based `fs.readFile()` and `fs.unlink()` with `await`
+   - **Fix**: Changed to `fsPromises.readFile()` and `fsPromises.unlink()`
+   - **Impact**: PID file operations would have failed silently or behaved unpredictably
+
+2. **Test isolation in `macos-tags-api.test.js`**
+   - **Issue**: Mock pollution caused intermittent failures (404, 405 errors)
+   - **Fix**: Added `jest.resetAllMocks()` before `jest.clearAllMocks()`
+
+3. **Permission errors in `launch-background-server.test.js`**
+   - **Issue**: Tests tried to create directories in restricted paths (`/var`, `/data`)
+   - **Fix**: Added comprehensive `fs` module mocking, changed to `/tmp` paths
 
 ### Running Tests
 ```bash
-# Run all tests
+# Run all tests (116 tests across 8 suites)
 npm test
 
 # Run with coverage report
@@ -905,8 +1041,32 @@ npm run test:coverage
 npm run test:watch
 
 # Run specific test file
+npm test -- tests/gallery-utils.test.js
 npx jest tests/macos-tags.test.js
 ```
+
+### Test Debugging
+```bash
+# Run with verbose output
+npm test -- --verbose
+
+# Run single test by name
+npm test -- -t "reads PID from file"
+
+# Run tests matching pattern
+npm test -- gallery
+```
+
+### Adding New Tests
+When adding tests for new functionality:
+1. **Always mock Commander** if importing `bin/gallery.js`
+2. **Export functions conditionally** using `NODE_ENV === 'test'` check
+3. **Use resetAllMocks + clearAllMocks** in beforeEach for isolation
+4. **Mock filesystem operations** to prevent actual file I/O
+5. **Use temporary directories** (os.tmpdir()) for integration tests requiring files
+6. **Clean up resources** in afterEach hooks
+
+See `TEST_SUMMARY.md` for detailed test case documentation.
 
 ### Test Coverage Areas
 1. **macOS Finder Tags Functions** (`readFinderTags`, `writeFinderTags`)

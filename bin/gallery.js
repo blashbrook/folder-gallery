@@ -283,7 +283,7 @@ async function launchBackgroundServer(scanDir, port, openBrowser = true) {
 async function readPidFile(directory = process.cwd()) {
     const pidFile = path.join(directory, '.gallery-cache', 'gallery.pid');
     try {
-        const pid = await fs.readFile(pidFile, 'utf8');
+        const pid = await fsPromises.readFile(pidFile, 'utf8');
         return parseInt(pid.trim());
     } catch {
         return null;
@@ -294,7 +294,7 @@ async function readPidFile(directory = process.cwd()) {
 async function removePidFile(directory = process.cwd()) {
     const pidFile = path.join(directory, '.gallery-cache', 'gallery.pid');
     try {
-        await fs.unlink(pidFile);
+        await fsPromises.unlink(pidFile);
     } catch {
         // Ignore if file doesn't exist
     }
@@ -834,6 +834,9 @@ program.parse();
 // Export internals for testing only
 if (process.env.NODE_ENV === 'test') {
     module.exports = {
-        launchBackgroundServer
+        launchBackgroundServer,
+        readPidFile,
+        removePidFile,
+        isProcessRunning
     };
 }

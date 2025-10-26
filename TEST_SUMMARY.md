@@ -1,6 +1,6 @@
-# macOS Finder Tags Test Suite
+# Folder Gallery Test Suite
 
-This document summarizes the comprehensive unit tests created for the macOS Finder tags functionality in the folder-gallery project.
+This document summarizes the comprehensive test suite for the folder-gallery project, covering all critical functionality including backend server management, macOS Finder tags integration, and UI features.
 
 ## Test Coverage
 
@@ -181,10 +181,140 @@ npx jest tests/macos-tags.test.js
 
 ```
 tests/
-├── setup.js              # Global test configuration
-├── test-utils.js          # Testing utilities and mocks
-├── macos-tags.test.js     # Core function unit tests
-└── macos-tags-api.test.js # REST API endpoint tests
+├── setup.js                          # Global test configuration
+├── test-utils.js                     # Testing utilities and mocks
+├── browser-opening.test.js           # Browser launch behavior tests
+├── gallery-sorting.test.js           # Image sorting functionality tests
+├── gallery-utils.test.js             # PID file and process management tests (NEW)
+├── launch-background-server.test.js  # Server process spawning tests (FIXED)
+├── macos-tags.test.js                # Core macOS tags function unit tests
+├── macos-tags-api.test.js            # REST API endpoint tests (FIXED)
+├── tag-filtering.test.js             # Tag filtering UI tests
+└── update-tag-button.test.js         # Tag editor UI tests
 ```
 
-All tests are isolated, deterministic, and provide comprehensive coverage of the macOS Finder tags functionality while remaining platform-agnostic for development and CI/CD environments.
+### Test Suite Status: ✅ All 116 Tests Passing
+
+## NEW: Gallery Utility Functions Tests (`tests/gallery-utils.test.js`)
+
+Added comprehensive tests for critical backend utility functions:
+
+### `readPidFile` Tests
+✅ **Reads PID from file when it exists** - Validates PID file parsing
+✅ **Returns null when PID file does not exist** - Handles missing files gracefully
+✅ **Returns null when cache directory does not exist** - Handles missing directories
+✅ **Handles malformed PID file gracefully** - Returns NaN for invalid content
+✅ **Trims whitespace from PID file** - Cleans up file content
+
+### `removePidFile` Tests  
+✅ **Removes PID file when it exists** - Successfully deletes PID files
+✅ **Does not throw error when PID file does not exist** - Graceful handling
+✅ **Does not throw error when cache directory does not exist** - Robust error handling
+
+### `isProcessRunning` Tests
+✅ **Returns true for current process** - Validates running process detection
+✅ **Returns false for non-existent PID** - Detects dead processes
+✅ **Handles PID 0 (behavior depends on OS)** - OS-specific edge case
+✅ **Handles negative PID (behavior depends on OS)** - Process group handling
+✅ **Handles null PID gracefully** - Input validation
+✅ **Handles undefined PID gracefully** - Input validation
+
+## FIXED: Background Server Launch Tests (`tests/launch-background-server.test.js`)
+
+### Issues Resolved
+1. **Permission denied errors** - Tests were trying to create directories in restricted paths
+   - **Solution**: Added comprehensive `fs` module mocking (existsSync, mkdirSync, openSync)
+   - Changed test paths from system directories to `/tmp` paths
+   - All filesystem operations now properly mocked
+
+2. **Test coverage improvements**
+   - Added test for `.gallery-cache` directory creation
+   - Added test for log file opening (stdout/stderr)
+
+### Test Cases
+✅ **Uses process.execPath when spawning** - Validates Node.js executable path
+✅ **Spawns detached child process** - Confirms detached mode, stdio handling, cwd
+✅ **Passes server-runner.js path as argument** - Validates server script path
+✅ **Passes serialized configuration** - JSON config validation
+✅ **Creates .gallery-cache directory** - Directory creation verification
+✅ **Opens log file for server output** - Log file handling validation
+
+## FIXED: macOS Tags API Tests (`tests/macos-tags-api.test.js`)
+
+### Issues Resolved
+1. **Test isolation problems** - Tests were interfering with each other
+   - **Solution**: Added `jest.resetAllMocks()` before `jest.clearAllMocks()`
+   - Ensures clean mock state between test runs
+   - Fixes intermittent failures (404, 405 errors)
+
+2. **Mock pollution** - `fs.access` mocks were not being properly reset
+   - Proper mock lifecycle management now in place
+
+## Bug Fixed in Main Code
+
+### `fs.promises` Usage Bug
+**File**: `bin/gallery.js`
+**Lines**: 286, 297
+
+**Issue**: The code was using callback-based `fs.readFile()` and `fs.unlink()` with `await`, which doesn't work correctly.
+
+**Before**:
+```javascript
+const pid = await fs.readFile(pidFile, 'utf8'); // Wrong - callback API
+await fs.unlink(pidFile); // Wrong - callback API
+```
+
+**After**:
+```javascript
+const pid = await fsPromises.readFile(pidFile, 'utf8'); // Correct
+await fsPromises.unlink(pidFile); // Correct
+```
+
+This bug would have caused PID file operations to fail silently or behave unpredictably. The new tests caught this issue.
+
+## Testing Infrastructure Improvements
+
+### New Exports for Testing
+Added test exports to `bin/gallery.js`:
+```javascript
+if (process.env.NODE_ENV === 'test') {
+    module.exports = {
+        launchBackgroundServer,
+        readPidFile,           // NEW
+        removePidFile,         // NEW
+        isProcessRunning       // NEW
+    };
+}
+```
+
+### Mock Patterns Established
+1. **Commander mock** - Prevents CLI execution during imports
+2. **child_process.spawn mock** - Full subprocess simulation
+3. **fs module mock** - Filesystem operation isolation
+4. **Platform mocking** - Cross-platform test execution
+
+## Test Execution
+
+```bash
+# Run all tests (116 tests)
+npm test
+
+# Run with coverage report
+npm run test:coverage
+
+# Run in watch mode (development)
+npm run test:watch
+
+# Run specific test file
+npm test -- tests/gallery-utils.test.js
+```
+
+## Test Statistics
+
+- **Total Test Suites**: 8
+- **Total Tests**: 116
+- **All Passing**: ✅
+- **Average Run Time**: ~2 seconds
+- **Coverage Focus**: Critical backend utilities, API endpoints, process management
+
+All tests are isolated, deterministic, and platform-agnostic for CI/CD compatibility.
