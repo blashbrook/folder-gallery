@@ -900,7 +900,7 @@ async function generateIndexHTML() {
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .header-actions { display: flex; gap: 0.5rem; align-items: center; }
+        .header-actions { display: flex; gap: 0.5rem; align-items: center; position: relative; }
         .header-btn {
             width: 36px;
             height: 36px;
@@ -1095,6 +1095,82 @@ async function generateIndexHTML() {
             transition: all 0.2s ease;
         }
         .tag-save:hover { background: var(--button-bg-hover); }
+        /* Tag filter dropdown */
+        .tag-filter-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--bg-primary);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            min-width: 200px;
+            max-width: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            padding: 8px;
+        }
+        .tag-filter-dropdown.active { display: block; }
+        .tag-filter-header {
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+        .tag-filter-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .tag-filter-item:hover {
+            background: var(--bg-secondary);
+        }
+        .tag-filter-item input[type="checkbox"] {
+            margin: 0;
+        }
+        .tag-filter-item label {
+            cursor: pointer;
+            flex: 1;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+        .tag-filter-count {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+            padding: 2px 6px;
+            border-radius: 10px;
+        }
+        .tag-filter-actions {
+            border-top: 1px solid rgba(0,0,0,0.1);
+            margin-top: 8px;
+            padding-top: 8px;
+            display: flex;
+            gap: 8px;
+        }
+        .tag-filter-btn {
+            flex: 1;
+            padding: 6px 12px;
+            border: 1px solid rgba(0,0,0,0.2);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+        .tag-filter-btn:hover {
+            background: var(--text-primary);
+            color: var(--bg-primary);
+        }
         @media (max-width: 1200px) { .gallery { column-count: 4; } }
         @media (max-width: 900px) { .gallery { column-count: 3; } }
         @media (max-width: 600px) { .gallery { column-count: 2; } }
@@ -1142,6 +1218,22 @@ async function generateIndexHTML() {
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
             </button>
+            <button class="header-btn" id="filterTagsBtn" onclick="toggleTagFilter()" title="Filter by Tags">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.59 13.41L11 3H4v7l9.59 9.59a2 2 0 0 0 2.83 0l4.17-4.17a2 2 0 0 0 0-2.83z"></path>
+                    <circle cx="6.5" cy="6.5" r="1.5"></circle>
+                </svg>
+            </button>
+            <div class="tag-filter-dropdown" id="tagFilterDropdown">
+                <div class="tag-filter-header">Filter by Tags</div>
+                <div class="tag-filter-items" id="tagFilterItems">
+                    <!-- Tag items will be populated by JavaScript -->
+                </div>
+                <div class="tag-filter-actions">
+                    <button class="tag-filter-btn" onclick="clearTagFilters()">Clear All</button>
+                    <button class="tag-filter-btn" onclick="applyTagFilters()">Apply</button>
+                </div>
+            </div>
         </div>
         <div class="progress-bar-container" id="progressBarContainer">
             <div class="progress-bar" id="progressBar"></div>
@@ -1190,10 +1282,22 @@ async function generateIndexHTML() {
         let currentModalMedia = null;
         let showOnlyHearted = false;
         let thumbnailsPaused = false;
+        let allTags = new Map(); // Map of tag -> count
+        let selectedTags = new Set();
+        let showTagFilter = false;
+        let fileTags = new Map(); // Map of relativePath -> tags array
         const modalMediaList = [];
         const mediaIndexMap = new Map();
         let currentIndex = -1;
         let currentTags = [];
+        
+        // Initialize tag filter button visibility based on platform
+        try {
+            const tagFilterBtnInit = document.getElementById('filterTagsBtn');
+            if (tagFilterBtnInit) {
+                tagFilterBtnInit.style.display = isMac ? '' : 'none';
+            }
+        } catch (e) {}
         
         function loadHearts() {
             const saved = localStorage.getItem('heartedImages');
@@ -1217,8 +1321,8 @@ async function generateIndexHTML() {
                 element.classList.toggle('hearted', heartedImages.has(relativePath));
             }
             updateHeartButton();
-            if (showOnlyHearted) {
-                filterByHearts();
+            if (showOnlyHearted || showTagFilter) {
+                filterByTags(); // This now handles both heart and tag filtering
             }
         }
         
@@ -1241,27 +1345,189 @@ async function generateIndexHTML() {
                 btn.style.color = '';
                 btn.querySelector('svg').style.fill = '';
             }
-            filterByHearts();
+            filterByTags();
         }
         
-        function filterByHearts() {
+        
+        // Tag filtering functions
+        async function loadAllTags() {
+            if (!isMac) return; // Tags only available on macOS
+            
+            allTags.clear();
+            fileTags.clear();
+            
+            // Get all image paths from the gallery
+            const imagePaths = [];
+            modalMediaList.forEach(item => {
+                imagePaths.push(item.relativePath);
+            });
+            
+            // Fetch tags for each image
+            for (const relativePath of imagePaths) {
+                try {
+                    const response = await fetch('/api/macos/tag?relativePath=' + encodeURIComponent(relativePath));
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.tags && data.tags.length > 0) {
+                            fileTags.set(relativePath, data.tags);
+                            data.tags.forEach(tag => {
+                                allTags.set(tag, (allTags.get(tag) || 0) + 1);
+                            });
+                        }
+                    }
+                } catch (e) {
+                    // Ignore errors for individual files
+                }
+            }
+            
+            // Show tag filter button if we have any tags
+            const tagFilterBtn = document.getElementById('filterTagsBtn');
+            if (tagFilterBtn) {
+                tagFilterBtn.style.display = isMac ? '' : 'none';
+            }
+            // Populate dropdown (will show a message if no tags)
+            populateTagFilterDropdown();
+        }
+        
+        function populateTagFilterDropdown() {
+            const container = document.getElementById('tagFilterItems');
+            container.innerHTML = '';
+            
+            if (allTags.size === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'tag-filter-item';
+                emptyMsg.style.cursor = 'default';
+                emptyMsg.innerHTML = '<span style="font-size:0.85rem; color: var(--text-secondary);">No Finder tags found</span>';
+                container.appendChild(emptyMsg);
+                return;
+            }
+            
+            // Sort tags alphabetically
+            const sortedTags = Array.from(allTags.entries()).sort(function(a, b){ return a[0].localeCompare(b[0]); });
+            
+            sortedTags.forEach(function(entry){
+                var tag = entry[0];
+                var count = entry[1];
+                const item = document.createElement('div');
+                item.className = 'tag-filter-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = 'tag-filter-' + tag;
+                checkbox.checked = selectedTags.has(tag);
+                checkbox.onchange = () => {
+                    if (checkbox.checked) {
+                        selectedTags.add(tag);
+                    } else {
+                        selectedTags.delete(tag);
+                    }
+                };
+                
+                const label = document.createElement('label');
+                label.htmlFor = checkbox.id;
+                label.textContent = tag;
+                
+                const countSpan = document.createElement('span');
+                countSpan.className = 'tag-filter-count';
+                countSpan.textContent = count.toString();
+                
+                item.appendChild(checkbox);
+                item.appendChild(label);
+                item.appendChild(countSpan);
+                
+                container.appendChild(item);
+            });
+        }
+        
+        function toggleTagFilter() {
+            const dropdown = document.getElementById('tagFilterDropdown');
+            const btn = document.getElementById('filterTagsBtn');
+            
+            if (dropdown.classList.contains('active')) {
+                dropdown.classList.remove('active');
+                // Close dropdown by clicking outside
+                document.removeEventListener('click', closeTagFilterOnClickOutside);
+            } else {
+                dropdown.classList.add('active');
+                // Close dropdown when clicking outside
+                setTimeout(() => {
+                    document.addEventListener('click', closeTagFilterOnClickOutside);
+                }, 0);
+            }
+        }
+        
+        function closeTagFilterOnClickOutside(event) {
+            const dropdown = document.getElementById('tagFilterDropdown');
+            const btn = document.getElementById('filterTagsBtn');
+            
+            if (!dropdown.contains(event.target) && !btn.contains(event.target)) {
+                dropdown.classList.remove('active');
+                document.removeEventListener('click', closeTagFilterOnClickOutside);
+            }
+        }
+        
+        function clearTagFilters() {
+            selectedTags.clear();
+            showTagFilter = false;
+            populateTagFilterDropdown();
+            applyTagFilters();
+        }
+        
+        function applyTagFilters() {
+            showTagFilter = selectedTags.size > 0;
+            const btn = document.getElementById('filterTagsBtn');
+            const dropdown = document.getElementById('tagFilterDropdown');
+            
+            // Update button appearance
+            if (showTagFilter) {
+                btn.style.background = '#3498db';
+                btn.style.color = '#fff';
+                btn.querySelector('svg').style.fill = '#fff';
+                btn.title = 'Filter by Tags (' + selectedTags.size + ' selected)';
+            } else {
+                btn.style.background = '';
+                btn.style.color = '';
+                btn.querySelector('svg').style.fill = '';
+                btn.title = 'Filter by Tags';
+            }
+            
+            // Apply the filter
+            filterByTags();
+            
+            // Close dropdown
+            dropdown.classList.remove('active');
+            document.removeEventListener('click', closeTagFilterOnClickOutside);
+        }
+        
+        function filterByTags() {
             document.querySelectorAll('.gallery-section').forEach(section => {
                 const items = section.querySelectorAll('.gallery-item');
                 let visibleCount = 0;
+                
                 items.forEach(item => {
                     const relativePath = item.dataset.relativePath;
-                    if (showOnlyHearted) {
-                        if (heartedImages.has(relativePath)) {
-                            item.style.display = '';
-                            visibleCount++;
-                        } else {
-                            item.style.display = 'none';
-                        }
-                    } else {
+                    let shouldShow = true;
+                    
+                    // Apply heart filter first
+                    if (showOnlyHearted && !heartedImages.has(relativePath)) {
+                        shouldShow = false;
+                    }
+                    
+                    // Apply tag filter
+                    if (shouldShow && showTagFilter && selectedTags.size > 0) {
+                        const itemTags = fileTags.get(relativePath) || [];
+                        // Show if the item has ANY of the selected tags
+                        shouldShow = Array.from(selectedTags).some(tag => itemTags.includes(tag));
+                    }
+                    
+                    if (shouldShow) {
                         item.style.display = '';
                         visibleCount++;
+                    } else {
+                        item.style.display = 'none';
                     }
                 });
+                
                 section.style.display = visibleCount > 0 ? '' : 'none';
             });
         }
@@ -1337,6 +1603,11 @@ async function generateIndexHTML() {
             });
             
             connectSSE();
+            
+            // Load tag information after gallery is loaded (only on macOS)
+            if (isMac) {
+                loadAllTags();
+            }
         }
         
         function connectSSE() {
