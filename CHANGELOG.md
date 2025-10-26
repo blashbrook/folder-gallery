@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/blashbrook/folder-gallery/compare/v1.8.0...v1.9.0) (2025-10-26)
+
+
+### Features
+
+* add info button and tooltip ([1346c95](https://github.com/blashbrook/folder-gallery/commit/1346c95d3c3a2c0e53547aead90ce7e8edb59303))
+
 # [1.8.0](https://github.com/blashbrook/folder-gallery/compare/v1.7.2...v1.8.0) (2025-10-26)
 
 
