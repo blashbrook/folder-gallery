@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/blashbrook/folder-gallery/compare/v1.6.3...v1.7.0) (2025-10-26)
+
+
+### Features
+
+* add backgound server tests ([1a63ac9](https://github.com/blashbrook/folder-gallery/commit/1a63ac98ae976ba0c2bd0281d0dd4594cf014f68))
+
 ## [1.6.3](https://github.com/blashbrook/folder-gallery/compare/v1.6.2...v1.6.3) (2025-10-26)
 
 
