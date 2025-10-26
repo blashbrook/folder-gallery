@@ -1,3 +1,16 @@
+# [1.5.0](https://github.com/blashbrook/folder-gallery/compare/v1.4.2...v1.5.0) (2025-10-26)
+
+
+### Bug Fixes
+
+* fix gallery launch ([e5bb283](https://github.com/blashbrook/folder-gallery/commit/e5bb283e88536da5a63d59afadde752782e8fb48))
+
+
+### Features
+
+* add tag highlighting in modal view ([7885e31](https://github.com/blashbrook/folder-gallery/commit/7885e313361060f430917cf27ad082cc2f717d31))
+* add test for tag features ([1fc434f](https://github.com/blashbrook/folder-gallery/commit/1fc434fd605ad9f55cabbfb1493f18dd52545b75))
+
 ## [1.4.2](https://github.com/blashbrook/folder-gallery/compare/v1.4.1...v1.4.2) (2025-10-26)
 
 
