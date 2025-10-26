@@ -1752,13 +1752,42 @@ async function setupServer() {
         res.json({ isPaused });
     });
 
-    // macOS-only: Apply Finder tags to a file
-    function runAppleScript(script) {
-        return new Promise((resolve, reject) => {
-            execFile('osascript', ['-e', script], (err, stdout, stderr) => {
-                if (err) return reject(new Error((stderr || err.message).toString()));
-                resolve(stdout.toString());
+    // macOS-only: Finder tags support via Spotlight/xattr (no AppleScript dependency)
+    async function readFinderTags(filePath) {
+        return new Promise((resolve) => {
+            const { spawn } = require('child_process');
+            // Prefer native xattr; if no attribute, return []
+            const py = spawn('python3', ['-'], { stdio: ['pipe', 'pipe', 'ignore'] });
+            const code = `import sys, plistlib, subprocess\n\npath = sys.argv[1]\ntry:\n    out = subprocess.check_output(['/usr/bin/xattr','-p','com.apple.metadata:_kMDItemUserTags', path])\n    arr = plistlib.loads(out)\n    for s in arr:\n        sys.stdout.write(str(s)+'\n')\nexcept subprocess.CalledProcessError:\n    pass\n`;
+            let output = '';
+            py.stdout.on('data', d => { output += d.toString(); });
+            py.on('close', () => {
+                const tags = output.split('\n').map(s => s.trim()).filter(Boolean);
+                resolve(tags);
             });
+            py.stdin.write(code);
+            py.stdin.end(filePath + '\n');
+        });
+    }
+
+    async function writeFinderTags(filePath, tags) {
+        return new Promise((resolve, reject) => {
+            const { spawn } = require('child_process');
+            const py = spawn('python3', ['-'], { stdio: ['pipe', 'pipe', 'pipe'] });
+            const code = `import sys, plistlib\narr = sys.argv[1:]\nhexval = plistlib.dumps(arr, fmt=plistlib.FMT_BINARY).hex()\nprint(hexval)\n`;
+            let hex = '';
+            py.stdout.on('data', d => { hex += d.toString().trim(); });
+            py.on('close', (codeExit) => {
+                if (!hex) return reject(new Error('Failed to encode tags'));
+                const { spawn: sp } = require('child_process');
+                const x = sp('/usr/bin/xattr', ['-wx', 'com.apple.metadata:_kMDItemUserTags', hex, filePath]);
+                x.on('close', (c) => c === 0 ? resolve(true) : reject(new Error('xattr failed')));
+            });
+            py.stdin.write(code);
+            // pass each tag as argv to python via stdin trick
+            // we can't modify argv on stdin-driven script, so embed tags into code if needed
+            // fallback: write tags joined by NUL and split inside script not needed; use sys.argv from spawn args instead
+            py.stdin.end();
         });
     }
 
@@ -1776,23 +1805,10 @@ async function setupServer() {
                 return res.status(403).json({ error: 'Access denied' });
             }
             await fs.access(resolvedPath);
-            const escPath = resolvedPath.replace(/\"/g, '\\"');
-            const script = `try
-                tell application "Finder"
-                    set theFile to (POSIX file "${escPath}") as alias
-                    set tnames to tag names of theFile
-                end tell
-                set AppleScript's text item delimiters to ","
-                return tnames as string
-            on error errMsg
-                return "ERROR:" & errMsg
-            end try`;
-            const out = await runAppleScript(script);
-            if (/^ERROR:/.test(out)) return res.json({ tags: [] });
-            const tags = out.trim() === '' ? [] : out.split(',').map(s => s.trim()).filter(Boolean);
-            res.json({ tags });
+            const tags = await readFinderTags(resolvedPath);
+            return res.json({ tags });
         } catch (e) {
-            res.json({ tags: [] });
+            return res.json({ tags: [] });
         }
     });
 
@@ -1811,25 +1827,28 @@ async function setupServer() {
             if (!resolvedPath.startsWith(resolvedScanDir)) {
                 return res.status(403).json({ error: 'Access denied' });
             }
-            // Ensure file exists
             await fs.access(resolvedPath);
-            // Build AppleScript to set tag names
-            const escPath = resolvedPath.replace(/"/g, '\\"');
-            const escTags = tags.map(t => `"${String(t).replace(/"/g, '\\"')}"`).join(', ');
-            const script = `try
-                tell application "Finder"
-                    set theFile to (POSIX file "${escPath}") as alias
-                    set tag names of theFile to {${escTags}}
-                end tell
-                return "OK"
-            on error errMsg
-                return errMsg
-            end try`;
-            const out = await runAppleScript(script);
-            if (!/OK/.test(out)) {
-                return res.status(500).json({ error: out.trim() || 'Failed to set tags' });
+
+            // Write tags via xattr binary plist
+            try {
+                // build hex via python
+                const { spawn } = require('child_process');
+                const py = spawn('python3', ['-c', `import sys, plistlib; print(plistlib.dumps(sys.argv[1:], fmt=plistlib.FMT_BINARY).hex())`, ''].concat(tags));
+                let hex = '';
+                py.stdout.on('data', d => { hex += d.toString().trim(); });
+                py.on('close', async (codeExit) => {
+                    if (!hex) return res.status(500).json({ error: 'Failed to encode tags' });
+                    const { spawn: sp } = require('child_process');
+                    const x = sp('/usr/bin/xattr', ['-wx', 'com.apple.metadata:_kMDItemUserTags', hex, resolvedPath]);
+                    x.on('close', async (c) => {
+                        if (c !== 0) return res.status(500).json({ error: 'Failed to set tags' });
+                        const readBack = await readFinderTags(resolvedPath);
+                        return res.json({ ok: true, tags: readBack });
+                    });
+                });
+            } catch (err) {
+                return res.status(500).json({ error: err.message || 'Failed to set Finder tags' });
             }
-            res.json({ ok: true });
         } catch (e) {
             res.status(500).json({ error: e.message || 'Failed to set Finder tags' });
         }
