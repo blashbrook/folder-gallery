@@ -44,6 +44,7 @@ function createMockSpawn() {
  */
 async function createTestFile(filename, content = 'test content') {
     const filePath = path.join(global.TEST_TEMP_DIR, filename);
+    await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, content);
     return filePath;
 }

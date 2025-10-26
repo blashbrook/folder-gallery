@@ -2,18 +2,19 @@
 const path = require('path');
 const fs = require('fs').promises;
 
-// Create temp directory for tests
-global.TEST_TEMP_DIR = path.join(__dirname, 'temp');
-
+// Create a unique temp directory for each test to avoid cross-test conflicts
 beforeEach(async () => {
-  // Create temp directory
+  const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  global.TEST_TEMP_DIR = path.join(__dirname, 'temp', unique);
   await fs.mkdir(global.TEST_TEMP_DIR, { recursive: true });
 });
 
 afterEach(async () => {
   // Clean up temp directory
   try {
-    await fs.rm(global.TEST_TEMP_DIR, { recursive: true, force: true });
+    if (global.TEST_TEMP_DIR) {
+      await fs.rm(global.TEST_TEMP_DIR, { recursive: true, force: true });
+    }
   } catch (err) {
     // Ignore cleanup errors
   }

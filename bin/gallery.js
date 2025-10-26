@@ -530,6 +530,118 @@ program
         }
     });
 
+// Helper: get CWD for a PID (macOS/Linux)
+async function getCwdForPid(pid) {
+    // Try Linux /proc first
+    const procCwd = `/proc/${pid}/cwd`;
+    try {
+        const real = await fs.readlink(procCwd);
+        if (real) return real;
+    } catch {}
+
+    // macOS and general fallback: use lsof
+    return new Promise((resolve) => {
+        const child = spawn('lsof', ['-a', '-p', String(pid), '-d', 'cwd', '-Fn']);
+        let out = '';
+        child.stdout.on('data', d => out += d.toString());
+        child.on('close', () => {
+            // Look for line starting with 'n' containing path
+            const line = out.split('\n').find(l => l.startsWith('n/'));
+            if (line && line.length > 1) {
+                resolve(line.slice(1));
+            } else {
+                resolve(null);
+            }
+        });
+        child.on('error', () => resolve(null));
+    });
+}
+
+// List all running galleries with their root directories and ports
+async function listRunningGalleries() {
+    const results = [];
+
+    // Collect PIDs via ps | grep server-runner.js (Unix/macOS)
+    const pids = await new Promise((resolve) => {
+        const ps = spawn('ps', ['aux']);
+        const grep = spawn('grep', ['server-runner.js']);
+        const grep2 = spawn('grep', ['-v', 'grep']);
+
+        ps.stdout.pipe(grep.stdin);
+        grep.stdout.pipe(grep2.stdin);
+
+        let output = '';
+        grep2.stdout.on('data', (data) => { output += data.toString(); });
+        const finish = () => {
+            const lines = output.trim().split('\n').filter(l => l.trim().length > 0);
+            const ids = lines.map(line => {
+                const parts = line.trim().split(/\s+/);
+                const pid = parseInt(parts[1]);
+                return isNaN(pid) ? null : pid;
+            }).filter(Boolean);
+            resolve(Array.from(new Set(ids)));
+        };
+        grep2.on('close', finish);
+        ps.on('error', finish);
+        grep.on('error', finish);
+        grep2.on('error', finish);
+    });
+
+    // For each PID, determine CWD and read server-info.json
+    for (const pid of pids) {
+        try {
+            const cwd = await getCwdForPid(pid);
+            if (!cwd) continue;
+            const info = await readServerInfo(cwd);
+            results.push({
+                pid,
+                path: cwd,
+                port: info?.port || null,
+                startedAt: info?.startedAt || null
+            });
+        } catch {}
+    }
+
+    // Also check current directory if running
+    const localPid = await readPidFile(process.cwd());
+    if (localPid && isProcessRunning(localPid)) {
+        const info = await readServerInfo(process.cwd());
+        const already = results.find(r => r.pid === localPid);
+        if (!already) {
+            results.push({ pid: localPid, path: process.cwd(), port: info?.port || null, startedAt: info?.startedAt || null });
+        }
+    }
+
+    // Deduplicate by path
+    const deduped = Object.values(results.reduce((acc, cur) => {
+        acc[cur.path] = acc[cur.path] && acc[cur.path].port ? acc[cur.path] : cur;
+        return acc;
+    }, {}));
+
+    return deduped.sort((a, b) => (a.path || '').localeCompare(b.path || ''));
+}
+
+program
+    .command('list')
+    .description('List running gallery servers and their root directories')
+    .action(async () => {
+        try {
+            const running = await listRunningGalleries();
+            if (!running || running.length === 0) {
+                console.log('No gallery servers found running');
+                return;
+            }
+            console.log('Running galleries:');
+            running.forEach(item => {
+                const portText = item.port ? ` (port ${item.port})` : '';
+                console.log(`- ${item.path}${portText} [PID ${item.pid}]`);
+            });
+        } catch (error) {
+            console.error('Failed to list galleries:', error.message);
+            process.exit(1);
+        }
+    });
+
 // Alias 'stop' to 'down' for backwards compatibility
 program
     .command('stop')
