@@ -31,6 +31,7 @@ describe('macOS Finder Tags API Endpoints', () => {
         restorePlatform = mockPlatform('darwin');
 
         // Clear mocks
+        jest.resetAllMocks();
         jest.clearAllMocks();
 
         // Create Express app with the API endpoints

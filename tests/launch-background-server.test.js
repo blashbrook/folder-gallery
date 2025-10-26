@@ -19,6 +19,14 @@ jest.mock('child_process', () => ({
   spawn: jest.fn()
 }));
 
+// Mock fs module
+jest.mock('fs', () => ({
+  existsSync: jest.fn(),
+  mkdirSync: jest.fn(),
+  openSync: jest.fn()
+}));
+
+const fs = require('fs');
 const { spawn } = require('child_process');
 const { MockSpawn, createMockSpawn } = require('./test-utils');
 
@@ -36,6 +44,11 @@ describe('launchBackgroundServer spawning behavior', () => {
     jest.clearAllMocks();
     mockSpawn = createMockSpawn();
     spawn.mockImplementation(mockSpawn);
+    
+    // Setup fs mocks
+    fs.existsSync.mockReturnValue(false);
+    fs.mkdirSync.mockReturnValue(undefined);
+    fs.openSync.mockReturnValue(3); // Mock file descriptor
   });
 
   afterEach(() => {
@@ -46,7 +59,7 @@ describe('launchBackgroundServer spawning behavior', () => {
     const child = new MockSpawn(process.execPath, [], {});
     spawn.mockReturnValue(child);
 
-    const promise = launchBackgroundServer('/tmp/scan', 3000, true);
+    const promise = launchBackgroundServer('/tmp/test-gallery', 3000, true);
     jest.advanceTimersByTime(1000);
     const result = await promise;
 
@@ -60,7 +73,7 @@ describe('launchBackgroundServer spawning behavior', () => {
     const child = new MockSpawn(process.execPath, [], {});
     spawn.mockReturnValue(child);
 
-    const scanDir = '/var/photos';
+    const scanDir = '/tmp/test-photos';
     const promise = launchBackgroundServer(scanDir, 3100, false);
     jest.advanceTimersByTime(1000);
     await promise;
@@ -68,9 +81,9 @@ describe('launchBackgroundServer spawning behavior', () => {
     const [, , options] = spawn.mock.calls[0];
     expect(options).toMatchObject({
       detached: true,
-      stdio: ['ignore', 'ignore', 'ignore'],
       cwd: scanDir
     });
+    expect(options.stdio).toHaveLength(3);
     expect(child.unref).toHaveBeenCalled();
   });
 
@@ -78,7 +91,7 @@ describe('launchBackgroundServer spawning behavior', () => {
     const child = new MockSpawn(process.execPath, [], {});
     spawn.mockReturnValue(child);
 
-    const promise = launchBackgroundServer('/data', 3200, true);
+    const promise = launchBackgroundServer('/tmp/test-data', 3200, true);
     jest.advanceTimersByTime(1000);
     await promise;
 
@@ -91,7 +104,7 @@ describe('launchBackgroundServer spawning behavior', () => {
     const child = new MockSpawn(process.execPath, [], {});
     spawn.mockReturnValue(child);
 
-    const scanDir = '/pics';
+    const scanDir = '/tmp/test-pics';
     const port = 3300;
     const openBrowser = false;
 
@@ -107,5 +120,34 @@ describe('launchBackgroundServer spawning behavior', () => {
     expect(config.port).toBe(port);
     expect(config.openBrowser).toBe(openBrowser);
     expect(config.packageDir).toBe(path.dirname(path.dirname(__filename)));
+  });
+
+  it('creates .gallery-cache directory if it does not exist', async () => {
+    const child = new MockSpawn(process.execPath, [], {});
+    spawn.mockReturnValue(child);
+
+    const scanDir = '/tmp/test-images';
+    fs.existsSync.mockReturnValue(false);
+
+    const promise = launchBackgroundServer(scanDir, 3400, true);
+    jest.advanceTimersByTime(1000);
+    await promise;
+
+    expect(fs.existsSync).toHaveBeenCalledWith(path.join(scanDir, '.gallery-cache'));
+    expect(fs.mkdirSync).toHaveBeenCalledWith(path.join(scanDir, '.gallery-cache'), { recursive: true });
+  });
+
+  it('opens log file for server output', async () => {
+    const child = new MockSpawn(process.execPath, [], {});
+    spawn.mockReturnValue(child);
+
+    const scanDir = '/tmp/test-gallery-logs';
+    const promise = launchBackgroundServer(scanDir, 3500, true);
+    jest.advanceTimersByTime(1000);
+    await promise;
+
+    const expectedLogPath = path.join(scanDir, '.gallery-cache', 'server.log');
+    expect(fs.openSync).toHaveBeenCalledWith(expectedLogPath, 'a');
+    expect(fs.openSync).toHaveBeenCalledTimes(2); // stdout and stderr
   });
 });
