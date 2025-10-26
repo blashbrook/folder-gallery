@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/blashbrook/folder-gallery/compare/v1.1.0...v1.1.1) (2025-10-26)
+
+
+### Bug Fixes
+
+* update to multer 2.x ([7819f22](https://github.com/blashbrook/folder-gallery/commit/7819f225003f6c31ff84cf4d4901a5d4615e1d0a))
+
 # [1.1.0](https://github.com/blashbrook/folder-gallery/compare/v1.0.1...v1.1.0) (2025-10-26)
 
 
