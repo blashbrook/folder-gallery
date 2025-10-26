@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/blashbrook/folder-gallery/compare/v1.2.0...v1.3.0) (2025-10-26)
+
+
+### Features
+
+* add tagging ([db92c71](https://github.com/blashbrook/folder-gallery/commit/db92c71dbf840613fab7e17f54cd12345e640380))
+
 # [1.2.0](https://github.com/blashbrook/folder-gallery/compare/v1.1.1...v1.2.0) (2025-10-26)
 
 
