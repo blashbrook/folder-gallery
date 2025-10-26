@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/blashbrook/folder-gallery/compare/v1.7.2...v1.8.0) (2025-10-26)
+
+
+### Features
+
+* updated documentation ([0603c89](https://github.com/blashbrook/folder-gallery/commit/0603c89c948366172153557c5fbf3ee12159a348))
+
 ## [1.7.2](https://github.com/blashbrook/folder-gallery/compare/v1.7.1...v1.7.2) (2025-10-26)
 
 
