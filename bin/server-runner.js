@@ -1342,7 +1342,7 @@ async function generateIndexHTML() {
                 </svg>
             </button>
             <button class="zoom-btn" id="zoomOut" title="Zoom Out">−</button>
-            <button class="zoom-btn" id="resetZoom" title="Reset Zoom">⌂</button>
+            <button class="zoom-btn" id="resetZoom" title="Reset Zoom" style="font-size: 14px; font-weight: 600;">1:1</button>
             <button class="zoom-btn" id="zoomIn" title="Zoom In">+</button>
             <button class="zoom-btn" id="nextBtn" title="Next">›</button>
         </div>
