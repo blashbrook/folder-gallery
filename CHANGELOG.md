@@ -1,3 +1,10 @@
+## [1.6.3](https://github.com/blashbrook/folder-gallery/compare/v1.6.2...v1.6.3) (2025-10-26)
+
+
+### Bug Fixes
+
+* update npm package ([8368e83](https://github.com/blashbrook/folder-gallery/commit/8368e835c4942915cb9da63ca97bdbbcad847cc8))
+
 ## [1.6.2](https://github.com/blashbrook/folder-gallery/compare/v1.6.1...v1.6.2) (2025-10-26)
 
 
