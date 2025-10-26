@@ -1,3 +1,13 @@
+## [1.4.2](https://github.com/blashbrook/folder-gallery/compare/v1.4.1...v1.4.2) (2025-10-26)
+
+
+### Bug Fixes
+
+* add tags ([d29cf37](https://github.com/blashbrook/folder-gallery/commit/d29cf37dd892d9f224a7a1d2e06fb38789eab8fb))
+* address test failures ([0790d21](https://github.com/blashbrook/folder-gallery/commit/0790d218b91e17c31acfbee0eb448bd52ad296c7))
+* fix tag reading and deleting ([0c5c123](https://github.com/blashbrook/folder-gallery/commit/0c5c123566389ece0375b7f091c51338bfcefa8b))
+* update server runner ([9c58a73](https://github.com/blashbrook/folder-gallery/commit/9c58a73fc17360ffb712d905be862e383313ff1a))
+
 ## [1.4.1](https://github.com/blashbrook/folder-gallery/compare/v1.4.0...v1.4.1) (2025-10-26)
 
 
