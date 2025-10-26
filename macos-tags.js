@@ -1,51 +1,50 @@
 const childProcess = require('child_process');
 
 /**
- * Read Finder tags from a file using macOS xattr and Python
+ * Read Finder tags from a file using the 'tag' CLI tool
  * @param {string} filePath - Path to the file
  * @returns {Promise<string[]>} Array of tag names
  */
 async function readFinderTags(filePath) {
     return new Promise((resolve) => {
-        // Prefer native xattr; if no attribute, return []
-        const py = childProcess.spawn('python3', ['-'], { stdio: ['pipe', 'pipe', 'ignore'] });
-        const code = `import sys, plistlib, subprocess
-
-path = sys.argv[1]
-try:
-    out = subprocess.check_output(['/usr/bin/xattr','-p','com.apple.metadata:_kMDItemUserTags', path])
-    arr = plistlib.loads(out)
-    for s in arr:
-        sys.stdout.write(str(s)+'\\n')
-except subprocess.CalledProcessError:
-    pass
-`;
+        // Use the 'tag' CLI tool which handles binary plist correctly
+        // Try common installation paths
+        const tagPath = process.env.TAG_PATH || '/opt/homebrew/bin/tag';
+        const proc = childProcess.spawn(tagPath, ['--list', '--no-name', filePath], { stdio: ['ignore', 'pipe', 'ignore'] });
         let output = '';
-        py.stdout.on('data', d => { output += d.toString(); });
-        py.on('close', () => {
-            const tags = output.split('\n').map(s => s.trim()).filter(Boolean);
+        proc.stdout.on('data', d => { output += d.toString(); });
+        proc.on('close', (code) => {
+            if (code !== 0) {
+                // File has no tags or error occurred
+                resolve([]);
+                return;
+            }
+            // Output format is comma-separated tags, trim whitespace
+            const tags = output.trim().split(',').map(s => s.trim()).filter(Boolean);
             resolve(tags);
         });
-        py.stdin.write(code);
-        py.stdin.end(filePath + '\n');
     });
 }
 
 /**
- * Write Finder tags to a file using macOS xattr and Python
+ * Write Finder tags to a file using the 'tag' CLI tool
  * @param {string} filePath - Path to the file
  * @param {string[]} tags - Array of tag names to set
  * @returns {Promise<boolean>} Success status
  */
 async function writeFinderTags(filePath, tags) {
     return new Promise((resolve, reject) => {
-        const py = childProcess.spawn('python3', ['-c', `import sys, plistlib; print(plistlib.dumps(sys.argv[1:], fmt=plistlib.FMT_BINARY).hex())`, ''].concat(tags));
-        let hex = '';
-        py.stdout.on('data', d => { hex += d.toString().trim(); });
-        py.on('close', (codeExit) => {
-            if (!hex) return reject(new Error('Failed to encode tags'));
-            const x = childProcess.spawn('/usr/bin/xattr', ['-wx', 'com.apple.metadata:_kMDItemUserTags', hex, filePath]);
-            x.on('close', (c) => c === 0 ? resolve(true) : reject(new Error('xattr failed')));
+        // Use 'tag --set' to replace all tags
+        // Join tags with commas as required by the tool
+        const tagPath = process.env.TAG_PATH || '/opt/homebrew/bin/tag';
+        const tagString = tags.join(',');
+        const proc = childProcess.spawn(tagPath, ['--set', tagString, filePath], { stdio: 'ignore' });
+        proc.on('close', (code) => {
+            if (code === 0) {
+                resolve(true);
+            } else {
+                reject(new Error(`tag command failed with code ${code}`));
+            }
         });
     });
 }

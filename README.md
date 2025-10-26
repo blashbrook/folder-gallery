@@ -53,6 +53,10 @@ Simply run `gallery up` in any folder with media files, and it will automaticall
 #### **macOS:**
 - **Xcode Command Line Tools**: Required for Sharp compilation
 - Install with: `xcode-select --install`
+- **tag CLI tool** (Optional): For Finder tags support in gallery UI
+  - Install: `brew install tag`
+  - Enables reading and writing Finder tags from the gallery
+  - Gallery works without it, but tag features will be disabled
 - **FFmpeg** (Optional): For real video thumbnails from frame extraction
   - Install: `brew install ffmpeg`
 
@@ -363,6 +367,9 @@ folder-gallery/
 
 ### Environment Variables
 - `PORT`: Server port (default: 3000)
+- `TAG_PATH`: Path to the `tag` CLI tool (default: `/opt/homebrew/bin/tag`)
+  - Only used on macOS for Finder tags functionality
+  - Set this if `tag` is installed in a non-standard location
 
 ### Command Line Arguments
 - First argument: Directory to scan (default: current directory)

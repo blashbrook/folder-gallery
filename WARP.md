@@ -359,22 +359,29 @@ npm run dev
 - `GET /api/macos/tag?relativePath=<path>`: Read Finder tags from a file
 - `POST /api/macos/tag`: Set Finder tags on a file (requires `{relativePath, tags}` JSON payload)
 
-These endpoints use native macOS `xattr` commands via Python subprocess to read/write the `com.apple.metadata:_kMDItemUserTags` extended attribute. On non-macOS platforms, the GET endpoint returns empty tags and POST returns an error.
+These endpoints use the `tag` CLI tool from Homebrew to read/write Finder tags. On non-macOS platforms, the GET endpoint returns empty tags and POST returns an error.
 
 ### macOS Finder Tags Implementation
 
 The macOS Finder tags functionality is implemented through a dedicated module (`macos-tags.js`) that provides:
 
 #### Core Functions
-- **`readFinderTags(filePath)`**: Reads Finder tags from a file using native macOS xattr commands
-- **`writeFinderTags(filePath, tags)`**: Writes Finder tags to a file using Python plist encoding + xattr
+- **`readFinderTags(filePath)`**: Reads Finder tags from a file using the `tag` CLI tool
+- **`writeFinderTags(filePath, tags)`**: Writes Finder tags to a file using the `tag` CLI tool
 
 #### Implementation Details
-- Uses Python subprocess to read/write binary plist data from xattr extended attributes
+- Uses the `tag` command-line tool (installed via Homebrew: `brew install tag`)
+- The `tag` tool properly handles binary plist data in macOS extended attributes
 - Gracefully handles files without tags (returns empty array)
 - Platform-aware: automatically disabled on non-macOS systems
 - Security: Path validation prevents access outside scan directory
 - Error handling: Robust subprocess error recovery
+- Full path used: `/opt/homebrew/bin/tag` (configurable via `TAG_PATH` environment variable)
+
+#### Prerequisites
+- **macOS only**: Finder tags are a macOS-specific feature
+- **Homebrew installation**: Install the `tag` tool with `brew install tag`
+- **Alternative paths**: If `tag` is installed elsewhere, set the `TAG_PATH` environment variable
 
 #### User Interface Integration
 - Modal viewer includes tag editor button (🏷️) on macOS
@@ -386,9 +393,12 @@ The macOS Finder tags functionality is implemented through a dedicated module (`
 
 #### Technical Architecture
 ```
-Frontend (Modal) → POST /api/macos/tag → writeFinderTags() → Python subprocess → xattr command
-Frontend (Load) ← GET /api/macos/tag ← readFinderTags() ← Python subprocess ← xattr read
+Frontend (Modal) → POST /api/macos/tag → writeFinderTags() → tag CLI tool → macOS xattr
+Frontend (Load) ← GET /api/macos/tag ← readFinderTags() ← tag CLI tool ← macOS xattr
 ```
+
+#### Why the `tag` CLI Tool?
+The original implementation used Python with `xattr -p` and `plistlib`, but `xattr -p` outputs binary data that gets truncated at null bytes when read through subprocess. The `tag` tool from Homebrew properly handles binary plist parsing and provides a reliable interface for Finder tags.
 
 ### Caching System
 - JSON files stored in `.gallery-cache/metadata/` directory
@@ -838,6 +848,12 @@ When adding new functionality, follow these patterns:
 - **supertest**: HTTP endpoint testing library for REST API validation
 - **@semantic-release/***: Automated release management and changelog generation
 
+#### Optional macOS Dependencies
+- **tag**: CLI tool for managing Finder tags (install via `brew install tag`)
+  - Required for reading and writing Finder tags from the gallery UI
+  - Only needed on macOS systems
+  - Gallery works without it, but tag features will be disabled
+
 ### Directory Exclusions
 - Hidden directories (starting with `.`)
 - `node_modules` directories
@@ -894,8 +910,8 @@ npx jest tests/macos-tags.test.js
 
 ### Test Coverage Areas
 1. **macOS Finder Tags Functions** (`readFinderTags`, `writeFinderTags`)
-   - Tag extraction from xattr metadata
-   - Tag writing via Python plist encoding + xattr
+   - Tag extraction using the `tag` CLI tool
+   - Tag writing via the `tag` CLI tool
    - Error handling for subprocess failures
    - Edge cases (empty tags, malformed data)
 
@@ -906,7 +922,7 @@ npx jest tests/macos-tags.test.js
    - Error handling and graceful degradation
 
 ### Mock Architecture
-- **MockSpawn**: Custom EventEmitter simulating child_process.spawn
+- **MockSpawn**: Custom EventEmitter simulating child_process.spawn for the `tag` CLI tool
 - **Platform mocking**: Temporary process.platform override for cross-platform tests
 - **File system mocking**: Temporary directories and test file creation
 - **HTTP mocking**: Supertest integration for API endpoint testing
@@ -915,7 +931,9 @@ See `TEST_SUMMARY.md` for detailed test case documentation.
 
 ## Environment Variables
 - `PORT`: Server port (default: 3000)
-- No other environment variables required
+- `TAG_PATH`: Path to the `tag` CLI tool (default: `/opt/homebrew/bin/tag`)
+  - Only used on macOS for Finder tags functionality
+  - Set this if `tag` is installed in a non-standard location
 
 ## File Patterns
 - Generated files use Base64 encoding: `Buffer.from(relativePath).toString('base64')`
