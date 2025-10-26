@@ -11,12 +11,14 @@ class MockSpawn extends EventEmitter {
         this.command = command;
         this.args = args;
         this.options = options;
+        this.pid = Math.floor(Math.random() * 10000) + 1000; // Random PID
         this.stdout = new EventEmitter();
         this.stderr = new EventEmitter();
         this.stdin = {
             write: jest.fn(),
             end: jest.fn()
         };
+        this.unref = jest.fn(); // Add unref method
         
         // Auto-emit events after next tick to simulate async behavior
         process.nextTick(() => this._simulateExecution());
