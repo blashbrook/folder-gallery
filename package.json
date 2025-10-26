@@ -57,6 +57,7 @@
     "bin/",
     "public/",
     "server.js",
-    "metadata.js"
+    "metadata.js",
+    "macos-tags.js"
   ]
 }
