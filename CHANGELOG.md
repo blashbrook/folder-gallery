@@ -1,3 +1,15 @@
+# [1.14.0](https://github.com/blashbrook/folder-gallery/compare/v1.13.2...v1.14.0) (2025-10-27)
+
+
+### Bug Fixes
+
+* address gallery server issues ([0446315](https://github.com/blashbrook/folder-gallery/commit/044631516661ef4ddc38139d8d171692eca18524))
+
+
+### Features
+
+* add installation testing ([05aab8c](https://github.com/blashbrook/folder-gallery/commit/05aab8ce25e8ff5d7185d2957366d01bf7919881))
+
 ## [1.13.2](https://github.com/blashbrook/folder-gallery/compare/v1.13.1...v1.13.2) (2025-10-27)
 
 
