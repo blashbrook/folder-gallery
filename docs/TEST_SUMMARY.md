@@ -309,12 +309,51 @@ npm run test:watch
 npm test -- tests/gallery-utils.test.js
 ```
 
+## NEW: Postinstall Script Tests (`tests/postinstall.test.js`)
+
+Added comprehensive tests for the enhanced postinstall script:
+
+### `isDevInstall` Tests (10 tests)
+✅ **Returns true when FG_DEV environment variable is set to "1"**
+✅ **Returns false when FG_DEV environment variable is not set**
+✅ **Returns true when npm_config_argv indicates dev install with --include=dev**
+✅ **Returns true when npm_config_argv indicates dev install with --only=dev**
+✅ **Returns true when npm_config_argv indicates dev install with --dev**
+✅ **Returns true when npm_config_include contains dev**
+✅ **Returns true when npm_config_only equals dev**
+✅ **Returns false when npm_config_argv has invalid JSON**
+✅ **Returns false when npm_config_argv original is not an array**
+✅ **Returns false under normal installation conditions**
+
+### `shouldForce` Tests (4 tests)
+✅ **Returns true when "--force" argument is passed**
+✅ **Returns true when "-f" argument is passed**
+✅ **Returns false when no force arguments are passed**
+✅ **Returns false when other arguments are passed but not force**
+
+### `main` Function Tests (6 tests)
+✅ **Always prints friendly banner** - Validates new box-drawing character banner
+✅ **Exits early when not a dev install and not forced**
+✅ **Runs dev tasks when FG_DEV is set**
+✅ **Runs dev tasks when force flag is passed**
+✅ **Runs dev tasks when both FG_DEV is set and force flag is passed**
+✅ **Handles errors in banner printing gracefully**
+
+### Postinstall Enhancements
+
+The postinstall script now:
+1. **Displays a styled box-drawing banner** with installation success message
+2. **Checks Sharp availability** and provides installation guidance if missing
+3. **Checks macOS tag CLI availability** (macOS only) and provides Homebrew installation instructions
+4. **Provides quick start instructions** with example commands
+5. **Supports graceful error handling** for all dependency checks
+
 ## Test Statistics
 
-- **Total Test Suites**: 8
-- **Total Tests**: 116
+- **Total Test Suites**: 14
+- **Total Tests**: 200
 - **All Passing**: ✅
-- **Average Run Time**: ~2 seconds
-- **Coverage Focus**: Critical backend utilities, API endpoints, process management
+- **Average Run Time**: ~1.3 seconds
+- **Coverage Focus**: Critical backend utilities, API endpoints, process management, installation validation
 
 All tests are isolated, deterministic, and platform-agnostic for CI/CD compatibility.

@@ -184,6 +184,31 @@ gallery rescan
 - **Port Range**: 3000-3099 (automatic port selection if 3000 in use)
 - **Bandwidth**: Minimal - thumbnails cached locally, full images served on-demand
 
+## Installation Feedback
+
+After installation, the postinstall script displays:
+- 🎉 **Styled installation banner** confirming successful setup
+- ✅ **Dependency status** for Sharp (image processing) and macOS tag CLI
+- 🚀 **Quick start instructions** to get your first gallery running
+- ⚠️ **Installation guidance** if optional dependencies are missing
+
+**Example postinstall output:**
+```
+╬════════════════════════════════════════════════════════════╩
+║  📸 Folder Gallery - Installed Successfully               ║
+╙════════════════════════════════════════════════════════════╜
+
+👤 Created by Brian Lashbrook
+📖 View Docs: https://github.com/blashbrook/folder-gallery#readme
+
+✅ Sharp: Image thumbnails enabled
+✅ macOS tag: Finder tags enabled  (macOS only)
+
+🚀 Quick Start:
+   cd /path/to/photos
+   gallery up
+```
+
 ## Alternative Installation Methods
 
 ### Minimal package vs dev extras

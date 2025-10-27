@@ -914,7 +914,7 @@ When adding new functionality, follow these patterns:
 ### Test Framework
 The project uses **Jest** as the primary testing framework with **Supertest** for HTTP endpoint testing. Tests are located in the `tests/` directory and can be run with `npm test`.
 
-**Current Status**: ✅ All 116 tests passing across 8 test suites (~2s runtime)
+**Current Status**: ✅ All 200 tests passing across 14 test suites (~1.3s runtime)
 
 ### Test Structure
 ```
@@ -922,16 +922,35 @@ tests/
 ├── setup.js                          # Global test configuration and cleanup
 ├── test-utils.js                     # Testing utilities and custom mocks
 ├── browser-opening.test.js           # Browser launch behavior tests
+├── delete-gallery-files.test.js      # Gallery cache deletion tests
+├── express-v5-functionality.test.js  # Express v5 compatibility tests
 ├── gallery-sorting.test.js           # Image sorting functionality tests  
 ├── gallery-utils.test.js             # PID file and process management tests
 ├── launch-background-server.test.js  # Server process spawning tests
 ├── macos-tags.test.js                # Unit tests for macOS Finder tags functions
 ├── macos-tags-api.test.js            # Integration tests for macOS tags REST API
+├── postinstall.test.js               # Installation script validation tests
+├── read-server-info.test.js          # Server info API tests
+├── sse-message-formatting.test.js    # Server-Sent Events message format tests
+├── tag-command-detection.test.js     # macOS tag CLI detection tests
 ├── tag-filtering.test.js             # Tag filtering UI tests
 └── update-tag-button.test.js         # Tag editor UI tests
 ```
 
 ### Test Coverage by Component
+
+#### Postinstall Script (`postinstall.test.js`)
+Tests for installation script functionality:
+- `isDevInstall()` - Dev install detection via environment variables and npm config
+- `shouldForce()` - Force flag detection for dev tasks
+- `main()` - Banner display, dependency checks, quick start instructions
+
+**Key Features Tested**:
+- Box-drawing character banner with installation success message
+- Sharp availability detection and installation guidance
+- macOS tag CLI detection and Homebrew installation instructions
+- Quick start command display
+- Graceful error handling for all dependency checks
 
 #### Backend Process Management (`gallery-utils.test.js`)
 Tests for critical PID file and process management utilities:
