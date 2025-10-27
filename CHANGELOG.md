@@ -1,3 +1,10 @@
+## [1.14.1](https://github.com/blashbrook/folder-gallery/compare/v1.14.0...v1.14.1) (2025-10-27)
+
+
+### Bug Fixes
+
+* update ([8f36e11](https://github.com/blashbrook/folder-gallery/commit/8f36e11f24266599316ef504fc72c38659a0cbc0))
+
 # [1.14.0](https://github.com/blashbrook/folder-gallery/compare/v1.13.2...v1.14.0) (2025-10-27)
 
 
