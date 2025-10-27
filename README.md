@@ -148,11 +148,11 @@ That's it! The gallery will:
 
 ### **Video Thumbnail Handling:**
 - **With FFmpeg installed**: Real frame extraction from videos
-  - Extracts frame at 1-second mark from each video
+  - Extracts a representative frame at roughly 1/3 of the video duration
   - Creates accurate video thumbnails showing actual content
-  - Maintains aspect ratio with black padding
+  - Maintains aspect ratio with padding when necessary
 - **Without FFmpeg**: Graceful fallback to placeholder thumbnails
-  - Video thumbnails display generic play button icon
+  - Video thumbnails display a generic play button icon
   - Gallery remains fully functional
   - Video playback still works normally
   - No error messages or logging; seamless experience
@@ -379,6 +379,11 @@ folder-gallery/
 
 ### Command Line Arguments
 - First argument: Directory to scan (default: current directory)
+
+#### Video thumbnail options (CLI)
+- `--max-workers <n>`: Limit concurrent FFmpeg extractions (default: 2)
+- `--ffmpeg-timeout <ms>`: Per-file FFmpeg timeout in milliseconds (default: 20000)
+- `--disable-video-thumbs`: Disable real video frames (always use placeholder)
 
 ### Examples
 

@@ -237,12 +237,16 @@ async function getThumbnail(media, THUMBNAILS_DIR) {
 }
 
 // Launch server as background process
-async function launchBackgroundServer(scanDir, port, openBrowser = true) {
+async function launchBackgroundServer(scanDir, port, openBrowser = true, extras = {}) {
     const config = {
         scanDir,
         port,
         openBrowser,
-        packageDir: PACKAGE_DIR
+        packageDir: PACKAGE_DIR,
+        // Optional tuning
+        maxWorkers: Number.isFinite(parseInt(extras.maxWorkers)) ? parseInt(extras.maxWorkers) : undefined,
+        ffmpegTimeoutMs: Number.isFinite(parseInt(extras.ffmpegTimeoutMs)) ? parseInt(extras.ffmpegTimeoutMs) : undefined,
+        disableVideoThumbs: !!extras.disableVideoThumbs
     };
     
     const serverRunnerPath = path.join(PACKAGE_DIR, 'bin', 'server-runner.js');
@@ -447,10 +451,16 @@ program
     .option('-d, --directory <path>', 'Directory to scan', process.cwd())
     .option('-p, --port <number>', 'Port to run server on', '3000')
     .option('--no-open', 'Don\'t open browser automatically')
+    .option('--max-workers <n>', 'Max concurrent video frame extractions', '2')
+    .option('--ffmpeg-timeout <ms>', 'FFmpeg per-file timeout in ms', '20000')
+    .option('--disable-video-thumbs', 'Disable real video thumbnails (use placeholder)')
     .action(async (options) => {
         const scanDir = path.resolve(options.directory);
         const port = parseInt(options.port);
         const openBrowser = options.open;
+        const maxWorkers = Number.isFinite(parseInt(options.maxWorkers)) ? parseInt(options.maxWorkers) : 2;
+        const ffmpegTimeout = Number.isFinite(parseInt(options.ffmpegTimeout)) ? parseInt(options.ffmpegTimeout) : 20000;
+        const disableVideoThumbs = !!options.disableVideoThumbs;
         
         try {
             // Check if server is already running in this directory
@@ -482,7 +492,7 @@ program
                     console.log('💡 To enable tags, install: brew install tag');
                 }
             }
-            const result = await launchBackgroundServer(scanDir, port, openBrowser);
+            const result = await launchBackgroundServer(scanDir, port, openBrowser, { maxWorkers, ffmpegTimeoutMs: ffmpegTimeout, disableVideoThumbs });
             console.log(`✅ Gallery server starting in background (PID: ${result.pid})`);
             // Wait briefly for server-info.json to appear
             let actualPort = port;
