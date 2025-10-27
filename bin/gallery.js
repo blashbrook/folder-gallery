@@ -847,6 +847,8 @@ if (process.env.NODE_ENV === 'test') {
         launchBackgroundServer,
         readPidFile,
         removePidFile,
-        isProcessRunning
+        isProcessRunning,
+        deleteGalleryFiles,
+        readServerInfo
     };
 }
