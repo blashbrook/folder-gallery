@@ -1,3 +1,10 @@
+## [1.13.2](https://github.com/blashbrook/folder-gallery/compare/v1.13.1...v1.13.2) (2025-10-27)
+
+
+### Bug Fixes
+
+* sharp fallback installation ([c7a67d9](https://github.com/blashbrook/folder-gallery/commit/c7a67d961fd97dd7d5f9cde5bd449fd76639242a))
+
 ## [1.13.1](https://github.com/blashbrook/folder-gallery/compare/v1.13.0...v1.13.1) (2025-10-27)
 
 
