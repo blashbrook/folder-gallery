@@ -401,7 +401,7 @@ async function killAllGalleryProcesses() {
 // Delete gallery cache files recursively
 async function deleteGalleryFiles(dir) {
     try {
-        const items = await fs.readdir(dir, { withFileTypes: true });
+        const items = await fsPromises.readdir(dir, { withFileTypes: true });
         let deletedCount = 0;
         
         for (const item of items) {
@@ -410,7 +410,7 @@ async function deleteGalleryFiles(dir) {
             if (item.isDirectory()) {
                 if (item.name === '.gallery-cache') {
                     // Delete entire .gallery-cache directory
-                    await fs.rm(fullPath, { recursive: true, force: true });
+                    await fsPromises.rm(fullPath, { recursive: true, force: true });
                     console.log(`🗑️  Deleted: ${fullPath}`);
                     deletedCount++;
                 } else if (!item.name.startsWith('.') && item.name !== 'node_modules') {
@@ -438,7 +438,7 @@ program
 async function readServerInfo(directory = process.cwd()) {
     const infoPath = path.join(directory, '.gallery-cache', 'server-info.json');
     try {
-        const raw = await fs.readFile(infoPath, 'utf8');
+        const raw = await fsPromises.readFile(infoPath, 'utf8');
         return JSON.parse(raw);
     } catch {
         return null;

@@ -1,61 +1,77 @@
-# Folder Gallery CLI
+[Home](README.md) | [Installation](docs/installation.md) | [CLI](docs/cli.md) | [Server](docs/server.md) | [Video thumbnails](docs/video-thumbnails.md) | [Troubleshooting](docs/troubleshooting.md)
 
-A lightweight Node.js web server that creates dynamic galleries from directories containing images and videos. Install globally and run `gallery up` in any folder to instantly create a beautiful, responsive web gallery.
+# Folder Gallery
+
+A simple, fast CLI tool to turn any folder of photos and videos into a beautiful, responsive web gallery.
+
+- One command: `gallery up`
+- Caches thumbnails, watches for changes, and serves instantly
+- Works great for large folders; runs in the background so your terminal is free
+
+---
 
 ## Quick Start
 
-### Installation (Recommended)
-
-Install globally via npm:
-
+1) Install globally
 ```bash
 npm install -g folder-gallery
 ```
 
-**Platform Requirements:**
-- Node.js 18.0.0 or higher
-- **macOS**: Xcode Command Line Tools (`xcode-select --install`)
-- **Linux**: Build tools (`build-essential` on Ubuntu/Debian)
-- **Windows**: Visual Studio Build Tools
-
-### Usage
-
+2) Start a gallery in any folder
 ```bash
-# Navigate to your image folder
-cd ~/Pictures/Vacation2024
-
-# Start the gallery
+cd /path/to/photos
 gallery up
-
-# Your browser will open automatically showing your gallery!
 ```
 
-### Common Commands
+3) Open in your browser (auto-opens by default)
+- Default URL: http://localhost:3000
+
+4) What you’ll see
+
+![Folder Gallery overview](./docs/screenshots/overview.png)
+
+Tip: Use `gallery up -d /path/to/photos --port 3000` to start on a specific path/port.
+
+---
+
+## Common Commands
 
 ```bash
-# Start in specific directory
+# Start in the current directory
+gallery up
+
+# Start in a specific directory
 gallery up -d /path/to/images
 
-# Use custom port
+# Use a custom port
 gallery up --port 8080
 
-# Start without auto-opening browser
+# Don’t auto-open the browser
 gallery up --no-open
 
 # Stop all gallery servers
 gallery down
 
-# Force rescan current directory
+# Force a rescan of the current gallery
 gallery rescan
 ```
 
-That's it! The gallery will:
-- ✅ Recursively scan for all images and videos
-- ✅ Generate thumbnails automatically
-- ✅ Watch for new files in real-time
-- ✅ Run in the background even after closing terminal
+---
 
-## Features
+## What you get
+- ✅ Recursively scans images and videos
+- ✅ Generates cached thumbnails (prioritized for visible items)
+- ✅ Watches for file changes in real-time
+- ✅ Runs detached so your terminal is free
+
+---
+
+## Need details?
+- Install notes, platform requirements, and optional tools like FFmpeg: docs/installation.md
+- Flags like `--max-workers`, `--ffmpeg-timeout`, `--disable-video-thumbs`: docs/video-thumbnails.md
+- Full CLI reference and examples: docs/cli.md
+- How the server, cache, and UI work: docs/server.md
+- Common issues and fixes: docs/troubleshooting.md
 
 ✨ **Modern Web Interface**
 - Organized gallery with folder sections

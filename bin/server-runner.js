@@ -980,10 +980,12 @@ async function generateIndexHTML() {
             align-items: center;
             justify-content: space-between;
         }
-        .header-left { display: flex; align-items: center; gap: 0.75rem; }
-        .header-icon { width: 28px; height: 28px; }
-        .header-content h1 { font-size: 1.5rem; margin: 0; line-height: 1.2; }
-        .header-path { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.15rem; }
+        .header-left { display: flex; flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+        .header-title { display: flex; align-items: baseline; gap: 8px; }
+        .header-title h1 { font-size: 1.5rem; margin: 0; line-height: 1.2; }
+        .header-icon { width: 1em; height: 1em; display: inline-block; vertical-align: baseline; }
+        .header-content { text-align: left; }
+        .header-path { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.15rem; text-align: left; }
         .info { font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem; }
         .progress-bar-container {
             height: 3px;
@@ -1339,13 +1341,15 @@ async function generateIndexHTML() {
 <body>
     <div class="header">
         <div class="header-left">
-            <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                <circle cx="12" cy="13" r="4"></circle>
-            </svg>
-            <div class="header-content">
+            <div class="header-title">
+                <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                </svg>
                 <h1>Folder Gallery</h1>
-                <div class="header-path" id="gallery-path"></div>
+            </div>
+            <div class="header-path" id="gallery-path"></div>
+            <div class="header-content">
                 <div class="info" id="gallery-info">Loading...</div>
                 <div class="progress-text" id="progress-text"></div>
             </div>
@@ -2272,7 +2276,7 @@ async function setupServer() {
         });
         
         sseClients.add(res);
-        res.write(`data: ${JSON.stringify({ type: 'global_thumbnail_progress', ...thumbnailGenerationState })}\\n\\n`);
+        res.write(`data: ${JSON.stringify({ type: 'global_thumbnail_progress', ...thumbnailGenerationState })}\n\n`);
         
         req.on('close', () => {
             sseClients.delete(res);
