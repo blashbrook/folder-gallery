@@ -182,9 +182,11 @@ describe('Postinstall Script Functions', () => {
       
       await main();
       
-      expect(consoleLogSpy).toHaveBeenCalledWith('\n[folder-gallery] Installed successfully');
-      expect(consoleLogSpy).toHaveBeenCalledWith('[folder-gallery] Created by Brian Lashbrook');
-      expect(consoleLogSpy).toHaveBeenCalledWith('[folder-gallery] View the docs: https://github.com/blashbrook/folder-gallery#readme');
+      expect(consoleLogSpy).toHaveBeenCalledWith('\n╔════════════════════════════════════════════════════════════╗');
+      expect(consoleLogSpy).toHaveBeenCalledWith('║  📸 Folder Gallery - Installed Successfully               ║');
+      expect(consoleLogSpy).toHaveBeenCalledWith('╚════════════════════════════════════════════════════════════╝');
+      expect(consoleLogSpy).toHaveBeenCalledWith('👤 Created by Brian Lashbrook');
+      expect(consoleLogSpy).toHaveBeenCalledWith('📖 View Docs: https://github.com/blashbrook/folder-gallery#readme');
     });
 
     it('exits early when not a dev install and not forced', async () => {
@@ -197,7 +199,7 @@ describe('Postinstall Script Functions', () => {
       await main();
       
       // Should only show the banner, not the dev completion message
-      expect(consoleLogSpy).toHaveBeenCalledWith('\n[folder-gallery] Installed successfully');
+      expect(consoleLogSpy).toHaveBeenCalledWith('\n╔════════════════════════════════════════════════════════════╗');
       expect(consoleLogSpy).not.toHaveBeenCalledWith('[folder-gallery] Dev install tasks completed (no-op).');
     });
 
@@ -210,7 +212,7 @@ describe('Postinstall Script Functions', () => {
       await main();
       
       // Should show banner but not dev completion message (since --force is not passed)
-      expect(consoleLogSpy).toHaveBeenCalledWith('\n[folder-gallery] Installed successfully');
+      expect(consoleLogSpy).toHaveBeenCalledWith('\n╔════════════════════════════════════════════════════════════╗');
       expect(consoleLogSpy).not.toHaveBeenCalledWith('[folder-gallery] Dev install tasks completed (no-op).');
     });
 
@@ -223,7 +225,7 @@ describe('Postinstall Script Functions', () => {
       await main();
       
       // Should show banner and dev completion message
-      expect(consoleLogSpy).toHaveBeenCalledWith('\n[folder-gallery] Installed successfully');
+      expect(consoleLogSpy).toHaveBeenCalledWith('\n╔════════════════════════════════════════════════════════════╗');
       expect(consoleLogSpy).toHaveBeenCalledWith('[folder-gallery] Dev install tasks completed (no-op).');
     });
 
@@ -236,7 +238,7 @@ describe('Postinstall Script Functions', () => {
       await main();
       
       // Should show banner and dev completion message
-      expect(consoleLogSpy).toHaveBeenCalledWith('\n[folder-gallery] Installed successfully');
+      expect(consoleLogSpy).toHaveBeenCalledWith('\n╔════════════════════════════════════════════════════════════╗');
       expect(consoleLogSpy).toHaveBeenCalledWith('[folder-gallery] Dev install tasks completed (no-op).');
     });
 
