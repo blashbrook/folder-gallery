@@ -1,6 +1,6 @@
 {
   "name": "folder-gallery",
-  "version": "1.11.1",
+  "version": "1.12.0",
   "description": "A lightweight web server that creates dynamic galleries from image directories",
   "main": "server.js",
   "bin": {
