@@ -1,3 +1,17 @@
+# [1.15.0](https://github.com/blashbrook/folder-gallery/compare/v1.14.2...v1.15.0) (2025-10-27)
+
+
+### Bug Fixes
+
+* address test failures ([717fa1d](https://github.com/blashbrook/folder-gallery/commit/717fa1de6f456a346d1ccbcb6ccb9b36658a0c6b))
+
+
+### Features
+
+* add postinstall tests ([e399790](https://github.com/blashbrook/folder-gallery/commit/e399790988332baa00c1580063ddf92e5b0366a8))
+* add postinstall tests ([111687a](https://github.com/blashbrook/folder-gallery/commit/111687aa6a970510fb2d66680cd0e4dd332ac948))
+* updated features and documentation ([5d11070](https://github.com/blashbrook/folder-gallery/commit/5d110709964f62f3470c12ad5f7525c2546dedf4))
+
 ## [1.14.2](https://github.com/blashbrook/folder-gallery/compare/v1.14.1...v1.14.2) (2025-10-27)
 
 
