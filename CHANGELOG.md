@@ -1,3 +1,10 @@
+## [1.14.2](https://github.com/blashbrook/folder-gallery/compare/v1.14.1...v1.14.2) (2025-10-27)
+
+
+### Bug Fixes
+
+* change version command from static to dynamic ([8f8cef2](https://github.com/blashbrook/folder-gallery/commit/8f8cef2b35fceb9b0afe8755a4cb940fcdec1c25))
+
 ## [1.14.1](https://github.com/blashbrook/folder-gallery/compare/v1.14.0...v1.14.1) (2025-10-27)
 
 
