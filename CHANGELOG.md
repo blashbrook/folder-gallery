@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/blashbrook/folder-gallery/compare/v1.10.4...v1.11.0) (2025-10-27)
+
+
+### Features
+
+* add video thumbnails ([7997f71](https://github.com/blashbrook/folder-gallery/commit/7997f71034b3a36822eda6ffb83a74b61a05e360))
+
 ## [1.10.4](https://github.com/blashbrook/folder-gallery/compare/v1.10.3...v1.10.4) (2025-10-26)
 
 
