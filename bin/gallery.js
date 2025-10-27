@@ -2,12 +2,20 @@
 
 const { Command } = require('commander');
 const express = require('express');
-const fs = require('fs');
-const fsPromises = fs.promises;
+const fs = require('fs').promises;
+const fsSync = require('fs');
 const path = require('path');
-const sharp = require('sharp');
 const net = require('net');
 const { spawn, fork } = require('child_process');
+
+// Try to load Sharp, but handle gracefully if it's not available
+let sharp = null;
+try {
+    sharp = require('sharp');
+} catch (error) {
+    console.warn('⚠️  Sharp not available - image thumbnails will be disabled');
+    console.warn('   To enable thumbnails, install Sharp: npm install sharp');
+}
 
 // ESM-only 'open' support via dynamic import to avoid require() ESM error
 let __openModule = null;
@@ -169,6 +177,11 @@ async function scanDirectory(dir, SCAN_DIR, THUMBNAILS_DIR, isRoot = false) {
 
 // Generate thumbnail for images (preserving aspect ratio)
 async function generateImageThumbnail(imagePath, thumbnailPath) {
+    if (!sharp) {
+        console.warn('Sharp not available - skipping thumbnail generation');
+        return false;
+    }
+    
     try {
         await sharp(imagePath)
             .resize(300, 300, { 
@@ -190,6 +203,11 @@ async function generateThumbnail(mediaPath, thumbnailPath, mediaType) {
         return await generateImageThumbnail(mediaPath, thumbnailPath);
     } else if (mediaType === 'video') {
         // For videos, create a simple placeholder thumbnail
+        if (!sharp) {
+            console.warn('Sharp not available - skipping video thumbnail generation');
+            return false;
+        }
+        
         try {
             // Create a simple video placeholder using Sharp
             await sharp({
@@ -253,12 +271,12 @@ async function launchBackgroundServer(scanDir, port, openBrowser = true, extras 
     
     // Create log file for server output
     const cacheDir = path.join(scanDir, '.gallery-cache');
-    if (!fs.existsSync(cacheDir)) {
-        fs.mkdirSync(cacheDir, { recursive: true });
+    if (!fsSync.existsSync(cacheDir)) {
+        fsSync.mkdirSync(cacheDir, { recursive: true });
     }
     const logFile = path.join(cacheDir, 'server.log');
-    const outStream = fs.openSync(logFile, 'a');
-    const errStream = fs.openSync(logFile, 'a');
+    const outStream = fsSync.openSync(logFile, 'a');
+    const errStream = fsSync.openSync(logFile, 'a');
     
     // Spawn fully detached child process
     const child = spawn(process.execPath, [serverRunnerPath, JSON.stringify(config)], {
@@ -287,7 +305,7 @@ async function launchBackgroundServer(scanDir, port, openBrowser = true, extras 
 async function readPidFile(directory = process.cwd()) {
     const pidFile = path.join(directory, '.gallery-cache', 'gallery.pid');
     try {
-        const pid = await fsPromises.readFile(pidFile, 'utf8');
+        const pid = await fs.readFile(pidFile, 'utf8');
         return parseInt(pid.trim());
     } catch {
         return null;
@@ -298,7 +316,7 @@ async function readPidFile(directory = process.cwd()) {
 async function removePidFile(directory = process.cwd()) {
     const pidFile = path.join(directory, '.gallery-cache', 'gallery.pid');
     try {
-        await fsPromises.unlink(pidFile);
+        await fs.unlink(pidFile);
     } catch {
         // Ignore if file doesn't exist
     }
@@ -401,7 +419,7 @@ async function killAllGalleryProcesses() {
 // Delete gallery cache files recursively
 async function deleteGalleryFiles(dir) {
     try {
-        const items = await fsPromises.readdir(dir, { withFileTypes: true });
+        const items = await fs.readdir(dir, { withFileTypes: true });
         let deletedCount = 0;
         
         for (const item of items) {
@@ -410,7 +428,7 @@ async function deleteGalleryFiles(dir) {
             if (item.isDirectory()) {
                 if (item.name === '.gallery-cache') {
                     // Delete entire .gallery-cache directory
-                    await fsPromises.rm(fullPath, { recursive: true, force: true });
+                    await fs.rm(fullPath, { recursive: true, force: true });
                     console.log(`🗑️  Deleted: ${fullPath}`);
                     deletedCount++;
                 } else if (!item.name.startsWith('.') && item.name !== 'node_modules') {
@@ -438,7 +456,7 @@ program
 async function readServerInfo(directory = process.cwd()) {
     const infoPath = path.join(directory, '.gallery-cache', 'server-info.json');
     try {
-        const raw = await fsPromises.readFile(infoPath, 'utf8');
+        const raw = await fs.readFile(infoPath, 'utf8');
         return JSON.parse(raw);
     } catch {
         return null;

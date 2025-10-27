@@ -33,6 +33,16 @@ async function main() {
     console.log('\n[folder-gallery] Installed successfully');
     console.log('[folder-gallery] Created by Brian Lashbrook');
     console.log(`[folder-gallery] View the docs: ${link}`);
+    
+    // Check if Sharp is available and provide guidance if not
+    try {
+      require('sharp');
+      console.log('✅ Sharp is available - image thumbnails enabled');
+    } catch (error) {
+      console.log('⚠️  Sharp not found - image thumbnails will be disabled');
+      console.log('   To enable thumbnails, run: npm install -g sharp');
+      console.log('   Or install locally: npm install sharp');
+    }
   } catch (_) {}
 
   const dev = isDevInstall() || shouldForce();

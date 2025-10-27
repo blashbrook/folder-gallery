@@ -17,6 +17,12 @@ A simple, fast CLI tool to turn any folder of photos and videos into a beautiful
 npm install -g folder-gallery
 ```
 
+**Note**: If Sharp (image processing library) fails to install, the gallery will still work but without thumbnail generation. To enable thumbnails:
+```bash
+# Install Sharp separately if the main install failed
+npm install -g sharp
+```
+
 2) Start a gallery in any folder
 ```bash
 cd /path/to/photos

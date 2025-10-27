@@ -6,8 +6,16 @@
 const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
-const sharp = require('sharp');
 const net = require('net');
+
+// Try to load Sharp, but handle gracefully if it's not available
+let sharp = null;
+try {
+    sharp = require('sharp');
+} catch (error) {
+    console.warn('⚠️  Sharp not available - image thumbnails will be disabled');
+    console.warn('   To enable thumbnails, install Sharp: npm install sharp');
+}
 const chokidar = require('chokidar');
 const { execFile } = require('child_process');
 const os = require('os');
@@ -228,6 +236,11 @@ async function scanDirectory(dir, isRoot = false) {
 }
 
 async function generateImageThumbnail(imagePath, thumbnailPath) {
+    if (!sharp) {
+        console.warn('Sharp not available - skipping image thumbnail generation');
+        return false;
+    }
+    
     try {
         await sharp(imagePath)
             .resize(300, 300, { 
@@ -310,6 +323,10 @@ async function generateVideoThumbnailFromFrame(videoPath, thumbnailPath) {
         }
         
         try {
+            if (!sharp) {
+                console.warn('Sharp not available - cannot process video frame');
+                return false;
+            }
             // Normalize to 300x300 inside fit for consistency
             await sharp(tmpOut)
                 .resize(300, 300, { fit: 'inside', withoutEnlargement: true })
@@ -336,6 +353,11 @@ async function generateThumbnail(mediaPath, thumbnailPath, mediaType) {
         const frameOk = await generateVideoThumbnailFromFrame(mediaPath, thumbnailPath);
         if (frameOk) return true;
         // Fallback: simple placeholder
+        if (!sharp) {
+            console.warn('Sharp not available - cannot generate video placeholder');
+            return false;
+        }
+        
         try {
             await sharp({
                 create: {
@@ -448,6 +470,10 @@ async function generateThumbnailFast(media) {
         const quality = THUMBNAIL_CONFIG.quality.jpeg;
         
         if (media.type === 'image') {
+            if (!sharp) {
+                console.warn('Sharp not available - cannot generate image thumbnail');
+                return null;
+            }
             await sharp(media.path)
                 .resize(size, size, { 
                     fit: 'inside',
@@ -459,6 +485,10 @@ async function generateThumbnailFast(media) {
             // Try extracting a real video frame at ~1/3 duration, fallback to placeholder
             const ok = await generateVideoThumbnailFromFrame(media.path, thumbnailPath);
             if (!ok) {
+                if (!sharp) {
+                    console.warn('Sharp not available - cannot generate video placeholder');
+                    return null;
+                }
                 await sharp({
                     create: {
                         width: size,
@@ -499,6 +529,11 @@ async function generateTinyPreview(media) {
     const previewPath = path.join(THUMBNAILS_DIR, previewName);
     
     try {
+        if (!sharp) {
+            console.warn('Sharp not available - cannot generate tiny preview');
+            return null;
+        }
+        
         if (media.type === 'image') {
             await sharp(media.path)
                 .resize(64, 64, { 
@@ -567,6 +602,11 @@ async function generateThumbnailWithProgress(media) {
             broadcastThumbnailProgress(media, 'processing', 25);
             
             if (media.type === 'image') {
+                if (!sharp) {
+                    console.warn('Sharp not available - cannot generate image thumbnail');
+                    broadcastThumbnailProgress(media, 'error', 0);
+                    return null;
+                }
                 broadcastThumbnailProgress(media, 'processing', 50);
                 await sharp(media.path)
                     .resize(300, 300, { 
@@ -577,6 +617,11 @@ async function generateThumbnailWithProgress(media) {
                     .toFile(thumbnailPath);
                 broadcastThumbnailProgress(media, 'processing', 90);
             } else if (media.type === 'video') {
+                if (!sharp) {
+                    console.warn('Sharp not available - cannot generate video placeholder');
+                    broadcastThumbnailProgress(media, 'error', 0);
+                    return null;
+                }
                 broadcastThumbnailProgress(media, 'processing', 50);
                 // Create video placeholder
                 await sharp({

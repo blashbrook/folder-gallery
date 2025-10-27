@@ -27,8 +27,7 @@
     "chokidar": "^4.0.3",
     "commander": "^14.0.2",
     "express": "^5.1.0",
-    "open": "^10.1.0",
-    "sharp": "^0.34.4"
+    "open": "^10.1.0"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
@@ -45,6 +44,9 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "optionalDependencies": {
+    "sharp": "^0.34.4"
   },
   "files": [
     "bin/",
