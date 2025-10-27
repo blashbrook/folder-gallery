@@ -29,20 +29,43 @@ function shouldForce() {
 async function main() {
   // Always print a friendly banner on regular installs
   try {
-    const link = 'https://github.com/blashbrook/folder-gallery#readme';
-    console.log('\n[folder-gallery] Installed successfully');
-    console.log('[folder-gallery] Created by Brian Lashbrook');
-    console.log(`[folder-gallery] View the docs: ${link}`);
+    console.log('\n╔════════════════════════════════════════════════════════════╗');
+    console.log('║  📸 Folder Gallery - Installed Successfully               ║');
+    console.log('╚════════════════════════════════════════════════════════════╝');
+    console.log('');
+    console.log('👤 Created by Brian Lashbrook');
+    console.log('📖 View Docs: https://github.com/blashbrook/folder-gallery#readme');
+    console.log('');
     
     // Check if Sharp is available and provide guidance if not
     try {
       require('sharp');
-      console.log('✅ Sharp is available - image thumbnails enabled');
+      console.log('✅ Sharp: Image thumbnails enabled');
     } catch (error) {
-      console.log('⚠️  Sharp not found - image thumbnails will be disabled');
-      console.log('   To enable thumbnails, run: npm install -g sharp');
-      console.log('   Or install locally: npm install sharp');
+      console.log('⚠️  Sharp: Not found - thumbnails will be disabled');
+      console.log('   Install with: npm install -g sharp');
     }
+    
+    // Check for tag CLI on macOS
+    if (process.platform === 'darwin') {
+      const { spawnSync } = require('child_process');
+      const tagPath = process.env.TAG_PATH || '/opt/homebrew/bin/tag';
+      const checkTag = spawnSync(tagPath, ['--version'], { stdio: 'ignore' });
+      
+      if (checkTag.error || checkTag.status !== 0) {
+        console.log('⚠️  macOS tag: Not found - Finder tags will be disabled');
+        console.log('   Install with: brew install tag');
+        console.log('   Info: https://github.com/jdberry/tag');
+      } else {
+        console.log('✅ macOS tag: Finder tags enabled');
+      }
+    }
+    
+    console.log('');
+    console.log('🚀 Quick Start:');
+    console.log('   cd /path/to/photos');
+    console.log('   gallery up');
+    console.log('');
   } catch (_) {}
 
   const dev = isDevInstall() || shouldForce();

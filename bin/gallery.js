@@ -495,22 +495,29 @@ program
             }
             
             
+            // Check Sharp availability
+            if (!sharp) {
+                console.log('');
+                console.log('⚠️  Sharp not available - thumbnails will be disabled');
+                console.log('💡 Install with: npm install -g sharp');
+            }
+            
             // Check if tag command is available on macOS
             if (process.platform === 'darwin') {
-                const { spawn } = require('child_process');
+                const { spawnSync } = require('child_process');
                 const tagPath = process.env.TAG_PATH || '/opt/homebrew/bin/tag';
-                const checkTag = spawn(tagPath, ['--version'], { stdio: 'ignore' });
-                let tagAvailable = false;
-                checkTag.on('error', () => {});
-                checkTag.on('close', () => { tagAvailable = true; });
-                await new Promise(r => setTimeout(r, 50));
+                const checkTag = spawnSync(tagPath, ['--version'], { stdio: 'ignore' });
                 
-                if (!tagAvailable) {
-                    console.log('⚠️  Note: macOS Finder tags disabled (optional)');
-                    console.log('💡 To enable tags, install: brew install tag');
+                if (checkTag.error || checkTag.status !== 0) {
+                    console.log('');
+                    console.log('⚠️  macOS tag not found - Finder tags will be disabled');
+                    console.log('💡 Install with: brew install tag');
+                    console.log('🔗 Info: https://github.com/jdberry/tag');
                 }
             }
+            
             const result = await launchBackgroundServer(scanDir, port, openBrowser, { maxWorkers, ffmpegTimeoutMs: ffmpegTimeout, disableVideoThumbs });
+            console.log('');
             console.log(`✅ Gallery server starting in background (PID: ${result.pid})`);
             // Wait briefly for server-info.json to appear
             let actualPort = port;
@@ -520,8 +527,10 @@ program
                 if (info?.port) { actualPort = info.port; break; }
                 await new Promise(r => setTimeout(r, 200));
             }
-            console.log(`🌐 Server will be available at: http://localhost:${actualPort}`);
-            console.log('💡 Use "gallery down" to stop the server');
+            console.log(`🌐 Server available at: http://localhost:${actualPort}`);
+            console.log(`📖 View Docs: https://github.com/blashbrook/folder-gallery#readme`);
+            console.log(`🔴 Stop server: gallery down`);
+            console.log('');
 
             if (openBrowser) {
                 // Wait a bit for server to be ready, then open browser
