@@ -44,6 +44,9 @@ let PORT = 3000;
 const PACKAGE_DIR = path.dirname(__dirname);
 const PUBLIC_DIR = path.join(PACKAGE_DIR, 'public');
 
+// Load package.json for version info
+const packageJson = require(path.join(PACKAGE_DIR, 'package.json'));
+
 // Supported media extensions
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff', '.svg'];
 const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.ogg', '.m4v', '.3gp', '.wmv', '.flv'];
@@ -450,8 +453,8 @@ async function deleteGalleryFiles(dir) {
 // CLI Commands
 program
     .name('gallery')
-.description('Folder Gallery CLI')
-    .version('1.0.0');
+    .description('Folder Gallery CLI')
+    .version(packageJson.version);
 
 async function readServerInfo(directory = process.cwd()) {
     const infoPath = path.join(directory, '.gallery-cache', 'server-info.json');
