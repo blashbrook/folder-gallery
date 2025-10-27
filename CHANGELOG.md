@@ -1,3 +1,10 @@
+## [1.11.1](https://github.com/blashbrook/folder-gallery/compare/v1.11.0...v1.11.1) (2025-10-27)
+
+
+### Bug Fixes
+
+* change header to folder gallery ([071fac1](https://github.com/blashbrook/folder-gallery/commit/071fac1ad37f139b7418b436b41f9baa49aa824c))
+
 # [1.11.0](https://github.com/blashbrook/folder-gallery/compare/v1.10.4...v1.11.0) (2025-10-27)
 
 
