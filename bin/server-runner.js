@@ -950,7 +950,7 @@ async function generateIndexHTML() {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gallery</title>
+    <title>Folder Gallery</title>
     <style>
         :root {
             --bg-primary: #ffffff;
@@ -1344,7 +1344,7 @@ async function generateIndexHTML() {
                 <circle cx="12" cy="13" r="4"></circle>
             </svg>
             <div class="header-content">
-                <h1>Gallery</h1>
+                <h1>Folder Gallery</h1>
                 <div class="header-path" id="gallery-path"></div>
                 <div class="info" id="gallery-info">Loading...</div>
                 <div class="progress-text" id="progress-text"></div>
