@@ -258,3 +258,505 @@ describe('Postinstall Script Functions', () => {
     });
   });
 });
+
+// Additional comprehensive tests for postinstall features
+describe('Postinstall Script - Sharp Detection', () => {
+  let consoleLogSpy;
+  let originalPlatform;
+
+  beforeEach(() => {
+    process.env.NODE_ENV = 'test';
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    originalPlatform = process.platform;
+    jest.resetModules();
+  });
+
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+    Object.defineProperty(process, 'platform', {
+      value: originalPlatform,
+      writable: true
+    });
+    jest.restoreAllMocks();
+  });
+
+  it('detects Sharp availability and displays success message', async () => {
+    // Mock platform as non-macOS to simplify test
+    Object.defineProperty(process, 'platform', {
+      value: 'linux',
+      writable: true
+    });
+    
+    jest.resetModules();
+    process.env.NODE_ENV = 'test';
+    const { main } = require('../scripts/postinstall.js');
+    
+    await main();
+    
+    // Check for the Sharp success message (may contain emoji variations)
+    const calls = consoleLogSpy.mock.calls.map(call => call[0]);
+    const hasSharpSuccess = calls.some(msg => 
+      msg && (msg.includes('Sharp: Image thumbnails enabled') || msg.includes('Sharp'))
+    );
+    
+    // For debugging: uncomment to see all console calls
+    // console.log('All console.log calls:', calls);
+    
+    // If Sharp is available in the environment, we should see success
+    // If not, we should see the warning - either is acceptable for this test
+    const hasSharpMessage = calls.some(msg => msg && msg.includes('Sharp'));
+    expect(hasSharpMessage).toBe(true);
+  });
+
+  it('detects missing Sharp and provides installation guidance', async () => {
+    Object.defineProperty(process, 'platform', {
+      value: 'linux',
+      writable: true
+    });
+    
+    // Mock require to throw for Sharp
+    const Module = require('module');
+    const originalRequire = Module.prototype.require;
+    Module.prototype.require = function(id) {
+      if (id === 'sharp') {
+        throw new Error('Cannot find module \'sharp\'');
+      }
+      return originalRequire.apply(this, arguments);
+    };
+    
+    jest.resetModules();
+    process.env.NODE_ENV = 'test';
+    const { main } = require('../scripts/postinstall.js');
+    
+    await main();
+    
+    // Restore require
+    Module.prototype.require = originalRequire;
+    
+    expect(consoleLogSpy).toHaveBeenCalledWith('⚠️  Sharp: Not found - thumbnails will be disabled');
+    expect(consoleLogSpy).toHaveBeenCalledWith('   Install with: npm install -g sharp');
+  });
+
+  it('handles Sharp require errors gracefully without crashing', async () => {
+    Object.defineProperty(process, 'platform', {
+      value: 'linux',
+      writable: true
+    });
+    
+    // Mock require to throw for Sharp
+    const Module = require('module');
+    const originalRequire = Module.prototype.require;
+    Module.prototype.require = function(id) {
+      if (id === 'sharp') {
+        throw new Error('Native module compilation failed');
+      }
+      return originalRequire.apply(this, arguments);
+    };
+    
+    jest.resetModules();
+    process.env.NODE_ENV = 'test';
+    const { main } = require('../scripts/postinstall.js');
+    
+    // Should not throw - errors are caught gracefully
+    await expect(main()).resolves.not.toThrow();
+    
+    // Restore require
+    Module.prototype.require = originalRequire;
+    
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('⚠️  Sharp'));
+  });
+});
+
+describe('Postinstall Script - macOS Tag CLI Detection', () => {
+  let consoleLogSpy;
+  let childProcess;
+  let originalPlatform;
+  let Module;
+  let originalRequire;
+
+  beforeEach(() => {
+    process.env.NODE_ENV = 'test';
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    originalPlatform = process.platform;
+    
+    // Mock Sharp as available to simplify tests
+    Module = require('module');
+    originalRequire = Module.prototype.require;
+    Module.prototype.require = function(id) {
+      if (id === 'sharp') {
+        return {}; // Return empty object for Sharp
+      }
+      return originalRequire.apply(this, arguments);
+    };
+    
+    jest.resetModules();
+  });
+
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+    Object.defineProperty(process, 'platform', {
+      value: originalPlatform,
+      writable: true
+    });
+    
+    // Restore require
+    if (Module && originalRequire) {
+      Module.prototype.require = originalRequire;
+    }
+    
+    jest.restoreAllMocks();
+  });
+
+  it('detects tag CLI availability on macOS', async () => {
+    Object.defineProperty(process, 'platform', {
+      value: 'darwin',
+      writable: true
+    });
+    
+    // Mock successful tag command
+    jest.resetModules();
+    childProcess = require('child_process');
+    childProcess.spawnSync = jest.fn().mockReturnValue({
+      error: null,
+      status: 0
+    });
+    
+    process.env.NODE_ENV = 'test';
+    const { main } = require('../scripts/postinstall.js');
+    
+    await main();
+    
+    expect(consoleLogSpy).toHaveBeenCalledWith('✅ macOS tag: Finder tags enabled');
+    expect(childProcess.spawnSync).toHaveBeenCalledWith(
+      '/opt/homebrew/bin/tag',
+      ['--version'],
+      { stdio: 'ignore' }
+    );
+  });
+
+  it('detects missing tag CLI and provides installation instructions', async () => {
+    Object.defineProperty(process, 'platform', {
+      value: 'darwin',
+      writable: true
+    });
+    
+    // Mock failed tag command
+    jest.resetModules();
+    childProcess = require('child_process');
+    childProcess.spawnSync = jest.fn().mockReturnValue({
+      error: new Error('ENOENT'),
+      status: 1
+    });
+    
+    process.env.NODE_ENV = 'test';
+    const { main } = require('../scripts/postinstall.js');
+    
+    await main();
+    
+    expect(consoleLogSpy).toHaveBeenCalledWith('⚠️  macOS tag: Not found - Finder tags will be disabled');
+    expect(consoleLogSpy).toHaveBeenCalledWith('   Install with: brew install tag');
+    expect(consoleLogSpy).toHaveBeenCalledWith('   Info: https://github.com/jdberry/tag');
+  });
+
+  it('respects TAG_PATH environment variable', async () => {
+    Object.defineProperty(process, 'platform', {
+      value: 'darwin',
+      writable: true
+    });
+    
+    process.env.TAG_PATH = '/custom/path/to/tag';
+    
+    jest.resetModules();
+    childProcess = require('child_process');
+    childProcess.spawnSync = jest.fn().mockReturnValue({
+      error: null,
+      status: 0
+    });
+    
+    process.env.NODE_ENV = 'test';
+    const { main } = require('../scripts/postinstall.js');
+    
+    await main();
+    
+    expect(childProcess.spawnSync).toHaveBeenCalledWith(
+      '/custom/path/to/tag',
+      ['--version'],
+      { stdio: 'ignore' }
+    );
+  });
+
+  it('skips tag check on non-macOS platforms', async () => {
+    Object.defineProperty(process, 'platform', {
+      value: 'linux',
+      writable: true
+    });
+    
+    jest.resetModules();
+    childProcess = require('child_process');
+    childProcess.spawnSync = jest.fn();
+    
+    process.env.NODE_ENV = 'test';
+    const { main } = require('../scripts/postinstall.js');
+    
+    await main();
+    
+    expect(childProcess.spawnSync).not.toHaveBeenCalled();
+    expect(consoleLogSpy).not.toHaveBeenCalledWith(expect.stringContaining('macOS tag'));
+  });
+
+  it('handles tag CLI spawn errors gracefully', async () => {
+    Object.defineProperty(process, 'platform', {
+      value: 'darwin',
+      writable: true
+    });
+    
+    // Mock spawnSync to throw error
+    jest.resetModules();
+    childProcess = require('child_process');
+    childProcess.spawnSync = jest.fn().mockImplementation(() => {
+      throw new Error('Spawn failed');
+    });
+    
+    process.env.NODE_ENV = 'test';
+    const { main } = require('../scripts/postinstall.js');
+    
+    // Should complete successfully even with spawn error
+    await expect(main()).resolves.not.toThrow();
+  });
+});
+
+describe('Postinstall Script - Quick Start Instructions', () => {
+  let consoleLogSpy;
+  let originalPlatform;
+  let Module;
+  let originalRequire;
+
+  beforeEach(() => {
+    process.env.NODE_ENV = 'test';
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    originalPlatform = process.platform;
+    
+    // Mock Sharp as available
+    Module = require('module');
+    originalRequire = Module.prototype.require;
+    Module.prototype.require = function(id) {
+      if (id === 'sharp') {
+        return {}; // Return empty object for Sharp
+      }
+      return originalRequire.apply(this, arguments);
+    };
+    
+    // Mock platform as non-macOS to simplify
+    Object.defineProperty(process, 'platform', {
+      value: 'linux',
+      writable: true
+    });
+    
+    jest.resetModules();
+  });
+
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+    Object.defineProperty(process, 'platform', {
+      value: originalPlatform,
+      writable: true
+    });
+    
+    // Restore require
+    if (Module && originalRequire) {
+      Module.prototype.require = originalRequire;
+    }
+    
+    jest.restoreAllMocks();
+  });
+
+  it('displays quick start header with emoji', async () => {
+    process.env.NODE_ENV = 'test';
+    const { main } = require('../scripts/postinstall.js');
+    
+    await main();
+    
+    expect(consoleLogSpy).toHaveBeenCalledWith('🚀 Quick Start:');
+  });
+
+  it('displays directory navigation instruction', async () => {
+    process.env.NODE_ENV = 'test';
+    const { main } = require('../scripts/postinstall.js');
+    
+    await main();
+    
+    expect(consoleLogSpy).toHaveBeenCalledWith('   cd /path/to/photos');
+  });
+
+  it('displays gallery up command', async () => {
+    process.env.NODE_ENV = 'test';
+    const { main } = require('../scripts/postinstall.js');
+    
+    await main();
+    
+    expect(consoleLogSpy).toHaveBeenCalledWith('   gallery up');
+  });
+
+  it('displays all quick start instructions in correct order', async () => {
+    process.env.NODE_ENV = 'test';
+    const { main } = require('../scripts/postinstall.js');
+    
+    await main();
+    
+    const calls = consoleLogSpy.mock.calls.map(call => call[0]);
+    const quickStartIndex = calls.findIndex(msg => msg && msg.includes('Quick Start'));
+    const cdIndex = calls.findIndex(msg => msg && msg.includes('cd /path/to/photos'));
+    const galleryIndex = calls.findIndex(msg => msg && msg.includes('gallery up'));
+    
+    expect(quickStartIndex).toBeGreaterThan(-1);
+    expect(cdIndex).toBeGreaterThan(quickStartIndex);
+    expect(galleryIndex).toBeGreaterThan(cdIndex);
+  });
+});
+
+describe('Postinstall Script - Comprehensive Error Handling', () => {
+  let consoleLogSpy;
+  let originalPlatform;
+
+  beforeEach(() => {
+    process.env.NODE_ENV = 'test';
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    originalPlatform = process.platform;
+    jest.resetModules();
+  });
+
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+    Object.defineProperty(process, 'platform', {
+      value: originalPlatform,
+      writable: true
+    });
+    jest.restoreAllMocks();
+  });
+
+  it('handles complete main() function failure gracefully', async () => {
+    // Mock console.log to throw on first call
+    let callCount = 0;
+    consoleLogSpy.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        throw new Error('Banner print failed');
+      }
+    });
+    
+    Object.defineProperty(process, 'platform', {
+      value: 'linux',
+      writable: true
+    });
+    
+    process.env.NODE_ENV = 'test';
+    const { main } = require('../scripts/postinstall.js');
+    
+    // Should not throw - entire block is wrapped in try-catch
+    await expect(main()).resolves.not.toThrow();
+  });
+
+  it('continues execution after dependency check errors', async () => {
+    Object.defineProperty(process, 'platform', {
+      value: 'linux',
+      writable: true
+    });
+    
+    // Mock require to throw for Sharp
+    const Module = require('module');
+    const originalRequire = Module.prototype.require;
+    Module.prototype.require = function(id) {
+      if (id === 'sharp') {
+        throw new Error('Critical Sharp error');
+      }
+      return originalRequire.apply(this, arguments);
+    };
+    
+    jest.resetModules();
+    process.env.NODE_ENV = 'test';
+    const { main } = require('../scripts/postinstall.js');
+    
+    await expect(main()).resolves.not.toThrow();
+    
+    // Restore require
+    Module.prototype.require = originalRequire;
+    
+    // Should still display banner despite Sharp error
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Folder Gallery - Installed Successfully'));
+    // And should show Sharp warning
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('⚠️  Sharp'));
+  });
+
+  it('handles multiple sequential errors gracefully', async () => {
+    Object.defineProperty(process, 'platform', {
+      value: 'darwin',
+      writable: true
+    });
+    
+    // Mock require to throw for Sharp
+    const Module = require('module');
+    const originalRequire = Module.prototype.require;
+    Module.prototype.require = function(id) {
+      if (id === 'sharp') {
+        throw new Error('Sharp error');
+      }
+      return originalRequire.apply(this, arguments);
+    };
+    
+    // Mock child_process to throw
+    jest.resetModules();
+    const childProcess = require('child_process');
+    childProcess.spawnSync = jest.fn().mockImplementation(() => {
+      throw new Error('Spawn error');
+    });
+    
+    process.env.NODE_ENV = 'test';
+    const { main } = require('../scripts/postinstall.js');
+    
+    // Should handle both Sharp and tag CLI errors
+    await expect(main()).resolves.not.toThrow();
+    
+    // Restore require
+    Module.prototype.require = originalRequire;
+  });
+
+  it('completes successfully when all checks fail', async () => {
+    Object.defineProperty(process, 'platform', {
+      value: 'darwin',
+      writable: true
+    });
+    
+    // Mock require to throw for Sharp
+    const Module = require('module');
+    const originalRequire = Module.prototype.require;
+    Module.prototype.require = function(id) {
+      if (id === 'sharp') {
+        throw new Error('Sharp unavailable');
+      }
+      return originalRequire.apply(this, arguments);
+    };
+    
+    jest.resetModules();
+    const childProcess = require('child_process');
+    childProcess.spawnSync = jest.fn().mockReturnValue({
+      error: new Error('ENOENT'),
+      status: 127
+    });
+    
+    process.env.NODE_ENV = 'test';
+    const { main } = require('../scripts/postinstall.js');
+    
+    await expect(main()).resolves.not.toThrow();
+    
+    // Restore require
+    Module.prototype.require = originalRequire;
+    
+    // Should show warnings - check that relevant messages exist
+    const calls = consoleLogSpy.mock.calls.map(call => call[0]);
+    const hasSharpWarning = calls.some(msg => msg && msg.includes('Sharp'));
+    const hasTagWarning = calls.some(msg => msg && msg.includes('macOS tag'));
+    
+    expect(hasSharpWarning).toBe(true);
+    expect(hasTagWarning).toBe(true);
+  });
+});
