@@ -63,6 +63,7 @@
     "test:coverage": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage",
     "link": "npm link",
     "unlink": "npm unlink -g folder-gallery",
+    "postinstall": "node scripts/postinstall.js",
     "local-install": "FG_DEV=1 node scripts/postinstall.js"
   }
 }
