@@ -116,7 +116,8 @@ function isLikelyThumbnail(filePath, filename) {
     }
     
     // Skip files that match thumbnail naming pattern (base64 encoded + .jpg)
-    if (filename.match(/^[A-Za-z0-9+/]+=*\.jpg$/)) {
+    // Base64 filenames should be at least 8 characters and end with = padding or be longer than typical filenames
+    if (filename.match(/^[A-Za-z0-9+/]{8,}=*\.jpg$/) && (filename.includes('=') || filename.length > 20)) {
         return true;
     }
     
