@@ -3,7 +3,16 @@
 const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
-const sharp = require('sharp');
+
+// Try to load Sharp, but handle gracefully if it's not available
+let sharp = null;
+try {
+    sharp = require('sharp');
+} catch (error) {
+    console.warn('⚠️  Sharp not available - image thumbnails will be disabled');
+    console.warn('   To enable thumbnails, install Sharp: npm install sharp');
+}
+
 const net = require('net');
 const { execFile } = require('child_process');
 const util = require('util');
@@ -624,6 +633,11 @@ async function extractVideoFrame(videoPath, outputPath, timeSeconds = 1) {
 
 // Generate thumbnail for images (preserving aspect ratio)
 async function generateImageThumbnail(imagePath, thumbnailPath) {
+    if (!sharp) {
+        console.warn('Sharp not available - skipping image thumbnail generation');
+        return false;
+    }
+    
     try {
         await sharp(imagePath)
             .resize(300, 300, { 
@@ -639,8 +653,32 @@ async function generateImageThumbnail(imagePath, thumbnailPath) {
     }
 }
 
+// Generate low-resolution thumbnail for images (for lazy loading)
+async function generateLowResThumbnail(imagePath, thumbnailPath) {
+    if (!sharp) {
+        console.warn('Sharp not available - skipping low-res image thumbnail generation');
+        return false;
+    }
+    
+    try {
+        await sharp(imagePath)
+            .resize(150, 150, { fit: 'cover', position: 'center' })
+            .jpeg({ quality: 40, progressive: true })
+            .toFile(thumbnailPath);
+        return true;
+    } catch (error) {
+        console.warn(`Failed to generate low-res thumbnail for ${imagePath}:`, error.message);
+        return false;
+    }
+}
+
 // Generate low-resolution thumbnail for lazy loading
 async function generateLowResVideoThumbnail(videoPath, thumbnailPath) {
+    if (!sharp) {
+        console.warn('Sharp not available - skipping low-res video thumbnail generation');
+        return false;
+    }
+    
     try {
         // Extract a frame and resize to low-res
         const tempFramePath = thumbnailPath.replace('.jpg', '_temp.jpg');
@@ -677,20 +715,29 @@ async function generateThumbnail(mediaPath, thumbnailPath, mediaType) {
             const frameExtracted = await extractVideoFrame(mediaPath, thumbnailPath);
             
             if (frameExtracted) {
-                // Optimize the extracted frame with Sharp
-                try {
-                    await sharp(thumbnailPath)
-                        .resize(300, 300, { fit: 'inside', withoutEnlargement: true })
-                        .jpeg({ quality: 80 })
-                        .toFile(thumbnailPath);
-                } catch (error) {
-                    // If optimization fails, use the extracted frame as-is
-                    console.warn(`Failed to optimize video frame, using as-is:`, error.message);
+                // Optimize the extracted frame with Sharp (if available)
+                if (sharp) {
+                    try {
+                        await sharp(thumbnailPath)
+                            .resize(300, 300, { fit: 'inside', withoutEnlargement: true })
+                            .jpeg({ quality: 80 })
+                            .toFile(thumbnailPath);
+                    } catch (error) {
+                        // If optimization fails, use the extracted frame as-is
+                        console.warn(`Failed to optimize video frame, using as-is:`, error.message);
+                    }
+                } else {
+                    console.warn('Sharp not available - using unoptimized FFmpeg frame');
                 }
                 return true;
             }
             
-            // Fallback: create a simple placeholder if FFmpeg fails
+            // Fallback: create a simple placeholder if FFmpeg fails (requires Sharp)
+            if (!sharp) {
+                console.warn('Sharp not available - cannot generate video placeholder');
+                return false;
+            }
+            
             console.warn(`FFmpeg extraction failed for ${mediaPath}, using placeholder`);
             await sharp({
                 create: {
