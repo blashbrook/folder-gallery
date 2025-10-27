@@ -6,15 +6,6 @@
   "bin": {
     "gallery": "bin/gallery.js"
   },
-  "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
-    "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --watch",
-    "test:coverage": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage",
-    "link": "npm link",
-    "unlink": "npm unlink -g folder-gallery"
-  },
   "keywords": [
     "gallery",
     "images",
@@ -57,9 +48,20 @@
   },
   "files": [
     "bin/",
-    "public/",
     "server.js",
     "metadata.js",
-    "macos-tags.js"
-  ]
+    "macos-tags.js",
+    "scripts/postinstall.js"
+  ],
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --watch",
+    "test:coverage": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage",
+    "link": "npm link",
+    "unlink": "npm unlink -g folder-gallery",
+    "postinstall": "node -e \"try{require('fs').accessSync('scripts/postinstall.js');require('child_process').spawnSync(process.execPath,['scripts/postinstall.js'],{stdio:'inherit'})}catch(e){}\"",
+    "local-install": "FG_DEV=1 node scripts/postinstall.js"
+  }
 }

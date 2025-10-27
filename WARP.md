@@ -4,6 +4,11 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Project Overview
 
+Agent note (Warp/Copilot): All gallery UI and static assets are generated at runtime by JavaScript.
+- Do not add or expect files in public/; the HTML is created by bin/server-runner.js (generateIndexHTML) into .gallery-cache/index.html per directory.
+- Thumbnails and tiny previews are generated on-demand under .gallery-cache/thumbnails/.
+- To change UI, edit generateIndexHTML() and related client-side code embedded there.
+
 This is a lightweight Node.js CLI tool that creates dynamic image galleries from any directory. It can be installed globally and launched from any folder using the `gallery` command. The tool consists of:
 
 1. **Legacy standalone server** (`server.js`) - Original single-file implementation with embedded HTML

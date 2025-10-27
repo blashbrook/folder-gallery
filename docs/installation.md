@@ -18,6 +18,16 @@ Optional but recommended:
 npm install -g folder-gallery
 ```
 
+This installs a minimal package (CLI + server). Docs/tests are not included in the published tarball.
+
+### Dev extras (optional)
+```bash
+# Run dev postinstall tasks (no-op placeholder)
+npm run local-install
+# or
+FG_DEV=1 npm install -g folder-gallery
+```
+
 ## Update
 ```bash
 npm update -g folder-gallery
