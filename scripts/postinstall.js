@@ -52,3 +52,12 @@ async function main() {
 }
 
 main().catch(() => process.exit(0));
+
+// Export functions for testing
+if (process.env.NODE_ENV === 'test') {
+  module.exports = {
+    isDevInstall,
+    shouldForce,
+    main
+  };
+}
