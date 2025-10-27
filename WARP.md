@@ -39,6 +39,14 @@ This is a lightweight Node.js CLI tool that creates dynamic image galleries from
 - Subtle depth through layered shadows and transparency
 - Refined interactions that feel at home on macOS
 
+**Distribution & Installation Requirements**: The package MUST install successfully for end users via multiple methods:
+- `npm install -g folder-gallery` (from npm registry)
+- `npm install -g blashbrook/folder-gallery` (from GitHub)
+- `npm install -g blashbrook/folder-gallery#v1.x.x` (specific GitHub release)
+- All required files (especially `scripts/postinstall.js`) MUST be included in the npm package
+- The postinstall script must work reliably across all platforms (macOS, Linux, Windows)
+- Installation failures must be debugged and fixed to ensure smooth end-user experience
+
 ## Key Architecture
 
 ### Design Priorities (Critical - DO NOT VIOLATE)

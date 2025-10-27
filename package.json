@@ -63,7 +63,6 @@
     "test:coverage": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage",
     "link": "npm link",
     "unlink": "npm unlink -g folder-gallery",
-    "postinstall": "node -e \"try{require('fs').accessSync('scripts/postinstall.js');require('child_process').spawnSync(process.execPath,['scripts/postinstall.js'],{stdio:'inherit'})}catch(e){}\"",
     "local-install": "FG_DEV=1 node scripts/postinstall.js"
   }
 }
