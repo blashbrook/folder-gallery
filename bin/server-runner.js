@@ -1748,46 +1748,78 @@ async function generateIndexHTML() {
         }
 
         function buildSuggestions(query) {
-            const lowerQuery = query.toLowerCase();
             const suggestions = [];
             const seen = new Set();
 
-            // Add matching filenames
+            // Split query into words (by spaces)
+            const queryWords = query.toLowerCase().trim().split(/\s+/);
+            const lastWord = queryWords[queryWords.length - 1] || '';
+
+            // Helper: extract words from a string (split by _, -, space, ., and camelCase)
+            function extractWords(str) {
+                return str
+                    .replace(/([a-z])([A-Z])/g, '$1 $2') // camelCase
+                    .split(/[\s_\-.]+/)
+                    .map(w => w.toLowerCase())
+                    .filter(w => w.length > 0);
+            }
+
+            // Helper: check if a word matches the query
+            function matchesQuery(word, query) {
+                return word.startsWith(query) || word.includes(query);
+            }
+
+            // Extract word suggestions from filenames
             modalMediaList.forEach(item => {
-                const filename = item.name.toLowerCase();
-                if (filename.includes(lowerQuery) && !seen.has(item.name)) {
-                    suggestions.push({ text: item.name, type: 'file' });
-                    seen.add(item.name);
-                }
+                const words = extractWords(item.name);
+                words.forEach(word => {
+                    if (word.length >= 2 && matchesQuery(word, lastWord) && !seen.has(word)) {
+                        suggestions.push({ text: word, type: 'word' });
+                        seen.add(word);
+                    }
+                });
             });
 
-            // Add matching folder names
-            const folders = new Set();
+            // Extract word suggestions from folder names
             document.querySelectorAll('.section-title').forEach(el => {
                 const folderName = el.textContent;
-                if (folderName && folderName.toLowerCase().includes(lowerQuery)) {
-                    folders.add(folderName);
-                }
-            });
-            folders.forEach(folder => {
-                if (!seen.has(folder)) {
-                    suggestions.push({ text: folder, type: 'folder' });
-                    seen.add(folder);
+                if (folderName) {
+                    const words = extractWords(folderName);
+                    words.forEach(word => {
+                        if (word.length >= 2 && matchesQuery(word, lastWord) && !seen.has(word)) {
+                            suggestions.push({ text: word, type: 'word' });
+                            seen.add(word);
+                        }
+                    });
                 }
             });
 
-            // Add matching history items (show first if they match)
+            // Add matching history items (full phrases, not word-by-word)
             const matchingHistory = searchHistory
-                .filter(h => h.toLowerCase().includes(lowerQuery))
+                .filter(h => h.toLowerCase().includes(query.toLowerCase()))
                 .slice(0, 3);
 
             matchingHistory.forEach(h => {
                 if (!seen.has(h)) {
                     suggestions.unshift({ text: h, type: 'history' });
+                    seen.add(h);
                 }
             });
 
-            return suggestions.slice(0, 10); // Limit to 10 suggestions
+            // Sort word suggestions by relevance (starts-with first, then contains)
+            const wordSuggestions = suggestions.filter(s => s.type === 'word');
+            const startsWithSuggestions = wordSuggestions.filter(s => s.text.startsWith(lastWord));
+            const containsSuggestions = wordSuggestions.filter(s => !s.text.startsWith(lastWord));
+
+            // Combine: history first, then starts-with, then contains
+            const historySuggestions = suggestions.filter(s => s.type === 'history');
+            const sorted = [
+                ...historySuggestions,
+                ...startsWithSuggestions.slice(0, 8),
+                ...containsSuggestions.slice(0, 2)
+            ];
+
+            return sorted.slice(0, 10); // Limit to 10 suggestions
         }
 
         function showAutocomplete(query) {
@@ -1811,6 +1843,8 @@ async function generateIndexHTML() {
                 let typeLabel = '';
                 if (suggestion.type === 'history') {
                     icon = '<span class="history-icon">🕒</span>';
+                } else if (suggestion.type === 'word') {
+                    // No label for individual words
                 } else if (suggestion.type === 'folder') {
                     typeLabel = '<span class="type">folder</span>';
                 } else {
@@ -1820,7 +1854,7 @@ async function generateIndexHTML() {
                 item.innerHTML = icon + suggestion.text + typeLabel;
 
                 item.addEventListener('click', () => {
-                    selectAutocompleteSuggestion(suggestion.text);
+                    selectAutocompleteSuggestion(suggestion.text, suggestion.type);
                 });
 
                 dropdown.appendChild(item);
@@ -1836,12 +1870,40 @@ async function generateIndexHTML() {
             autocompleteSelectedIndex = -1;
         }
 
-        function selectAutocompleteSuggestion(text) {
+        function selectAutocompleteSuggestion(text, suggestionType) {
             const input = document.getElementById('searchInput');
-            input.value = text;
-            searchQuery = text;
-            addToSearchHistory(text);
-            hideAutocomplete();
+
+            if (suggestionType === 'history') {
+                // History items replace the entire input
+                input.value = text;
+                searchQuery = text;
+                hideAutocomplete();
+            } else if (suggestionType === 'word') {
+                // Word suggestions: replace the last word
+                const currentValue = input.value;
+                const queryWords = currentValue.trim().split(/\s+/);
+
+                // Replace the last incomplete word with the selected word
+                queryWords[queryWords.length - 1] = text;
+
+                // Add a space after the word for the next word
+                input.value = queryWords.join(' ') + ' ';
+                searchQuery = input.value;
+
+                // Keep autocomplete open for next word suggestion
+                const trimmedQuery = searchQuery.trim();
+                if (trimmedQuery.length > 0) {
+                    showAutocomplete(trimmedQuery);
+                } else {
+                    hideAutocomplete();
+                }
+            } else {
+                // Default behavior for file/folder suggestions
+                input.value = text;
+                searchQuery = text;
+                hideAutocomplete();
+            }
+
             filterByTags();
             input.focus();
         }
@@ -1867,7 +1929,7 @@ async function generateIndexHTML() {
                 e.preventDefault();
                 const suggestion = autocompleteSuggestions[autocompleteSelectedIndex];
                 if (suggestion) {
-                    selectAutocompleteSuggestion(suggestion.text);
+                    selectAutocompleteSuggestion(suggestion.text, suggestion.type);
                 }
                 return true;
             } else if (e.key === 'Escape') {
