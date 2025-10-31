@@ -1,3 +1,11 @@
+# [1.20.0](https://github.com/blashbrook/folder-gallery/compare/v1.19.0...v1.20.0) (2025-10-31)
+
+
+### Features
+
+* add 'gallery upgrade' command to regenerate HTML/JS/CSS ([1767962](https://github.com/blashbrook/folder-gallery/commit/17679628a18e4e9e83dc1c2a71e54f952e36b742))
+* add autocomplete to search with keyboard navigation and history ([a42a216](https://github.com/blashbrook/folder-gallery/commit/a42a216e3fe538f223d889063a04213b0faac61a))
+
 # [1.19.0](https://github.com/blashbrook/folder-gallery/compare/v1.18.0...v1.19.0) (2025-10-31)
 
 
