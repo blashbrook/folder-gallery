@@ -1752,14 +1752,14 @@ async function generateIndexHTML() {
             const seen = new Set();
 
             // Split query into words (by spaces)
-            const queryWords = query.toLowerCase().trim().split(/\s+/);
+            const queryWords = query.toLowerCase().trim().split(/\\s+/);
             const lastWord = queryWords[queryWords.length - 1] || '';
 
             // Helper: extract words from a string (split by _, -, space, ., and camelCase)
             function extractWords(str) {
                 return str
                     .replace(/([a-z])([A-Z])/g, '$1 $2') // camelCase
-                    .split(/[\s_\-.]+/)
+                    .split(/[\\s_\\-.]+/)
                     .map(w => w.toLowerCase())
                     .filter(w => w.length > 0);
             }
@@ -1881,7 +1881,7 @@ async function generateIndexHTML() {
             } else if (suggestionType === 'word') {
                 // Word suggestions: replace the last word
                 const currentValue = input.value;
-                const queryWords = currentValue.trim().split(/\s+/);
+                const queryWords = currentValue.trim().split(/\\s+/);
 
                 // Replace the last incomplete word with the selected word
                 queryWords[queryWords.length - 1] = text;
