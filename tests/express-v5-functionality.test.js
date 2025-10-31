@@ -182,6 +182,22 @@ describe('Express v5 Basic Functionality', () => {
       expect(response.body.success).toBe(true);
     });
 
+    test('should handle upgrade POST endpoint', async () => {
+      let upgradeCalled = false;
+
+      app.post('/api/upgrade', (req, res) => {
+        upgradeCalled = true;
+        res.json({ message: 'Upgrade completed - HTML/JS/CSS regenerated' });
+      });
+
+      const response = await request(app)
+        .post('/api/upgrade')
+        .expect(200);
+
+      expect(upgradeCalled).toBe(true);
+      expect(response.body.message).toBe('Upgrade completed - HTML/JS/CSS regenerated');
+    });
+
     test('should handle image serving routes with path parameters', async () => {
       app.get(/^\/image\/(.*)/, (req, res) => {
         const imagePath = req.params[0];

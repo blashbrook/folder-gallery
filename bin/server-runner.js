@@ -2535,7 +2535,19 @@ async function setupServer() {
             res.status(500).json({ error: 'Failed to rescan' });
         }
     });
-    
+
+    // API endpoint to regenerate HTML/JS/CSS without affecting thumbnails or metadata
+    app.post('/api/upgrade', async (req, res) => {
+        try {
+            console.log('🔄 Upgrade requested - regenerating HTML/JS/CSS');
+            await generateIndexHTML();
+            res.json({ message: 'Upgrade completed - HTML/JS/CSS regenerated' });
+        } catch (error) {
+            console.error('Error during upgrade:', error);
+            res.status(500).json({ error: 'Failed to upgrade gallery' });
+        }
+    });
+
     // API endpoint to get file information
     app.get('/api/file-info', async (req, res) => {
         try {

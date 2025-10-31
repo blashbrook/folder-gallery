@@ -734,7 +734,7 @@ program
                 console.log('💡 Start a server with: gallery up');
                 return;
             }
-            
+
             // Try to trigger rescan via API using recorded port
             const info = await readServerInfo(process.cwd());
             const tryPorts = [];
@@ -749,7 +749,7 @@ program
                 } catch {}
             }
             if (!response) throw new Error('Could not connect to gallery server');
-            
+
             if (response.ok) {
                 const result = await response.json();
                 console.log('✅ Gallery rescanned successfully');
@@ -757,9 +757,52 @@ program
             } else {
                 console.error('❌ Failed to rescan gallery');
             }
-            
+
         } catch (error) {
             console.error('Failed to rescan gallery:', error.message);
+            console.log('💡 The server might be running on a different port');
+            process.exit(1);
+        }
+    });
+
+program
+    .command('upgrade')
+    .description('Regenerate HTML/JS/CSS from latest folder-gallery version (preserves thumbnails & metadata)')
+    .action(async () => {
+        try {
+            const pid = await readPidFile();
+            if (!pid || !isProcessRunning(pid)) {
+                console.log('⚠️  No gallery server running in current directory');
+                console.log('💡 Start a server with: gallery up');
+                return;
+            }
+
+            // Try to trigger upgrade via API using recorded port
+            const info = await readServerInfo(process.cwd());
+            const tryPorts = [];
+            if (info?.port) tryPorts.push(info.port);
+            tryPorts.push(3000);
+            for (let p = 3001; p <= 3010; p++) tryPorts.push(p);
+            let response;
+            for (const p of tryPorts) {
+                try {
+                    response = await fetch(`http://localhost:${p}/api/upgrade`, { method: 'POST' });
+                    if (response.ok) break;
+                } catch {}
+            }
+            if (!response) throw new Error('Could not connect to gallery server');
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Gallery upgraded successfully');
+                console.log('📝 HTML/JS/CSS regenerated from latest folder-gallery version');
+                console.log('💾 Thumbnails and metadata preserved');
+            } else {
+                console.error('❌ Failed to upgrade gallery');
+            }
+
+        } catch (error) {
+            console.error('Failed to upgrade gallery:', error.message);
             console.log('💡 The server might be running on a different port');
             process.exit(1);
         }
