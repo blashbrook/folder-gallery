@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/blashbrook/folder-gallery/compare/v1.18.0...v1.19.0) (2025-10-31)
+
+
+### Features
+
+* add 'gallery upgrade' command to regenerate HTML/JS/CSS ([a84619d](https://github.com/blashbrook/folder-gallery/commit/a84619d8b7e869cfb5f5cd67563eb2880a8982e3))
+
 # [1.18.0](https://github.com/blashbrook/folder-gallery/compare/v1.17.0...v1.18.0) (2025-10-31)
 
 
