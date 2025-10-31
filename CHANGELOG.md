@@ -1,3 +1,10 @@
+## [1.22.1](https://github.com/blashbrook/folder-gallery/compare/v1.22.0...v1.22.1) (2025-10-31)
+
+
+### Bug Fixes
+
+* correct regex that was stopping thumbnail generateion ([bdfd759](https://github.com/blashbrook/folder-gallery/commit/bdfd7590ab404e8a43d25ae7adead83bc5713ffc))
+
 # [1.22.0](https://github.com/blashbrook/folder-gallery/compare/v1.21.0...v1.22.0) (2025-10-31)
 
 
