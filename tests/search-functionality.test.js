@@ -755,4 +755,386 @@ describe('Search Functionality', () => {
             expect(items[2].style.display).toBe('none'); // landscape.jpg: no 'travel' tag
         });
     });
+
+    describe('Autocomplete functionality', () => {
+        let buildSuggestions;
+        let showAutocomplete;
+        let hideAutocomplete;
+        let selectAutocompleteSuggestion;
+        let handleAutocompleteKeyboard;
+        let updateAutocompleteSelection;
+        let loadSearchHistory;
+        let addToSearchHistory;
+        let searchHistory;
+        let modalMediaList;
+        let autocompleteSuggestions;
+        let autocompleteSelectedIndex;
+
+        beforeEach(() => {
+            // Add autocomplete dropdown to DOM
+            const searchContainer = document.getElementById('searchContainer');
+            const dropdown = document.createElement('div');
+            dropdown.id = 'autocompleteDropdown';
+            dropdown.className = 'autocomplete-dropdown';
+            searchContainer.appendChild(dropdown);
+
+            // Initialize autocomplete variables
+            searchHistory = [];
+            autocompleteSuggestions = [];
+            autocompleteSelectedIndex = -1;
+
+            // Mock modalMediaList with test data
+            modalMediaList = [
+                { name: 'vacation.jpg', relativePath: 'vacation.jpg' },
+                { name: 'portrait.jpg', relativePath: 'portrait.jpg' },
+                { name: 'landscape.jpg', relativePath: 'landscape.jpg' },
+                { name: 'sunset.jpg', relativePath: 'nature/sunset.jpg' },
+                { name: 'mountain.jpg', relativePath: 'nature/mountain.jpg' },
+                { name: 'downtown.jpg', relativePath: 'city/downtown.jpg' }
+            ];
+
+            // Mock localStorage
+            const localStorageData = {};
+            global.localStorage = {
+                getItem: jest.fn(key => localStorageData[key] || null),
+                setItem: jest.fn((key, value) => { localStorageData[key] = value; }),
+                removeItem: jest.fn(key => delete localStorageData[key]),
+                clear: jest.fn(() => { Object.keys(localStorageData).forEach(k => delete localStorageData[k]); })
+            };
+
+            // Define autocomplete functions
+            loadSearchHistory = function() {
+                try {
+                    const stored = localStorage.getItem('gallery_search_history');
+                    if (stored) {
+                        searchHistory = JSON.parse(stored);
+                    }
+                } catch (e) {
+                    searchHistory = [];
+                }
+            };
+
+            addToSearchHistory = function(query) {
+                if (!query || query.length < 2) return;
+                searchHistory = [query, ...searchHistory.filter(h => h !== query)];
+                try {
+                    const unique = [...new Set(searchHistory)];
+                    const limited = unique.slice(0, 20);
+                    localStorage.setItem('gallery_search_history', JSON.stringify(limited));
+                } catch (e) {
+                    // Ignore storage errors
+                }
+            };
+
+            buildSuggestions = function(query) {
+                const lowerQuery = query.toLowerCase();
+                const suggestions = [];
+                const seen = new Set();
+
+                // Add matching filenames
+                modalMediaList.forEach(item => {
+                    const filename = item.name.toLowerCase();
+                    if (filename.includes(lowerQuery) && !seen.has(item.name)) {
+                        suggestions.push({ text: item.name, type: 'file' });
+                        seen.add(item.name);
+                    }
+                });
+
+                // Add matching folder names
+                const folders = new Set();
+                document.querySelectorAll('.section-title').forEach(el => {
+                    const folderName = el.textContent;
+                    if (folderName && folderName.toLowerCase().includes(lowerQuery)) {
+                        folders.add(folderName);
+                    }
+                });
+                folders.forEach(folder => {
+                    if (!seen.has(folder)) {
+                        suggestions.push({ text: folder, type: 'folder' });
+                        seen.add(folder);
+                    }
+                });
+
+                // Add matching history items
+                const matchingHistory = searchHistory
+                    .filter(h => h.toLowerCase().includes(lowerQuery))
+                    .slice(0, 3);
+
+                matchingHistory.forEach(h => {
+                    if (!seen.has(h)) {
+                        suggestions.unshift({ text: h, type: 'history' });
+                    }
+                });
+
+                return suggestions.slice(0, 10);
+            };
+
+            showAutocomplete = function(query) {
+                autocompleteSuggestions = buildSuggestions(query);
+                autocompleteSelectedIndex = -1;
+
+                const dropdown = document.getElementById('autocompleteDropdown');
+
+                if (autocompleteSuggestions.length === 0) {
+                    hideAutocomplete();
+                    return;
+                }
+
+                dropdown.innerHTML = '';
+                autocompleteSuggestions.forEach((suggestion, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.dataset.index = index;
+
+                    let icon = '';
+                    let typeLabel = '';
+                    if (suggestion.type === 'history') {
+                        icon = '<span class="history-icon">🕒</span>';
+                    } else if (suggestion.type === 'folder') {
+                        typeLabel = '<span class="type">folder</span>';
+                    } else {
+                        typeLabel = '<span class="type">file</span>';
+                    }
+
+                    item.innerHTML = icon + suggestion.text + typeLabel;
+
+                    item.addEventListener('click', () => {
+                        selectAutocompleteSuggestion(suggestion.text);
+                    });
+
+                    dropdown.appendChild(item);
+                });
+
+                dropdown.classList.add('active');
+            };
+
+            hideAutocomplete = function() {
+                const dropdown = document.getElementById('autocompleteDropdown');
+                dropdown.classList.remove('active');
+                dropdown.innerHTML = '';
+                autocompleteSelectedIndex = -1;
+            };
+
+            selectAutocompleteSuggestion = function(text) {
+                const input = document.getElementById('searchInput');
+                input.value = text;
+                searchQuery = text;
+                addToSearchHistory(text);
+                hideAutocomplete();
+                filterByTags();
+                input.focus();
+            };
+
+            updateAutocompleteSelection = function(items) {
+                items.forEach((item, index) => {
+                    if (index === autocompleteSelectedIndex) {
+                        item.classList.add('selected');
+                        // Mock scrollIntoView for jsdom
+                        if (item.scrollIntoView) {
+                            item.scrollIntoView({ block: 'nearest' });
+                        }
+                    } else {
+                        item.classList.remove('selected');
+                    }
+                });
+            };
+
+            handleAutocompleteKeyboard = function(e) {
+                const dropdown = document.getElementById('autocompleteDropdown');
+                if (!dropdown.classList.contains('active')) return false;
+
+                const items = dropdown.querySelectorAll('.autocomplete-item');
+                if (items.length === 0) return false;
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    autocompleteSelectedIndex = Math.min(autocompleteSelectedIndex + 1, items.length - 1);
+                    updateAutocompleteSelection(items);
+                    return true;
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    autocompleteSelectedIndex = Math.max(autocompleteSelectedIndex - 1, -1);
+                    updateAutocompleteSelection(items);
+                    return true;
+                } else if (e.key === 'Enter' && autocompleteSelectedIndex >= 0) {
+                    e.preventDefault();
+                    const suggestion = autocompleteSuggestions[autocompleteSelectedIndex];
+                    if (suggestion) {
+                        selectAutocompleteSuggestion(suggestion.text);
+                    }
+                    return true;
+                } else if (e.key === 'Escape') {
+                    hideAutocomplete();
+                    return true;
+                }
+
+                return false;
+            };
+        });
+
+        it('should build suggestions from filenames', () => {
+            const suggestions = buildSuggestions('port');
+
+            const fileSuggestions = suggestions.filter(s => s.type === 'file');
+            expect(fileSuggestions.some(s => s.text === 'portrait.jpg')).toBe(true);
+        });
+
+        it('should build suggestions from folder names', () => {
+            const suggestions = buildSuggestions('nature');
+
+            const folderSuggestions = suggestions.filter(s => s.type === 'folder');
+            expect(folderSuggestions.some(s => s.text === 'Nature Photos')).toBe(true);
+        });
+
+        it('should include search history in suggestions', () => {
+            searchHistory = ['vacation photos', 'mountain pics'];
+
+            const suggestions = buildSuggestions('photos');
+
+            const historySuggestions = suggestions.filter(s => s.type === 'history');
+            expect(historySuggestions.some(s => s.text === 'vacation photos')).toBe(true);
+        });
+
+        it('should limit suggestions to 10 items', () => {
+            // Add many items to history
+            searchHistory = Array.from({ length: 20 }, (_, i) => `search${i}`);
+
+            const suggestions = buildSuggestions('search');
+
+            expect(suggestions.length).toBeLessThanOrEqual(10);
+        });
+
+        it('should show autocomplete dropdown when called', () => {
+            showAutocomplete('vacation');
+
+            const dropdown = document.getElementById('autocompleteDropdown');
+            expect(dropdown.classList.contains('active')).toBe(true);
+            expect(dropdown.children.length).toBeGreaterThan(0);
+        });
+
+        it('should hide autocomplete dropdown when called', () => {
+            showAutocomplete('vacation');
+            const dropdown = document.getElementById('autocompleteDropdown');
+            expect(dropdown.classList.contains('active')).toBe(true);
+
+            hideAutocomplete();
+
+            expect(dropdown.classList.contains('active')).toBe(false);
+            expect(dropdown.innerHTML).toBe('');
+        });
+
+        it('should select suggestion and add to search history', () => {
+            selectAutocompleteSuggestion('vacation.jpg');
+
+            const input = document.getElementById('searchInput');
+            expect(input.value).toBe('vacation.jpg');
+            expect(searchQuery).toBe('vacation.jpg');
+            expect(searchHistory[0]).toBe('vacation.jpg');
+        });
+
+        it('should navigate suggestions with arrow keys', () => {
+            // Use a query that returns multiple results
+            showAutocomplete('a'); // Will match multiple filenames
+
+            const dropdown = document.getElementById('autocompleteDropdown');
+            let items = dropdown.querySelectorAll('.autocomplete-item');
+
+            expect(items.length).toBeGreaterThan(1); // Ensure we have multiple items
+
+            // Press ArrowDown
+            const downEvent = { key: 'ArrowDown', preventDefault: jest.fn() };
+            const result1 = handleAutocompleteKeyboard(downEvent);
+
+            expect(result1).toBe(true);
+            expect(autocompleteSelectedIndex).toBe(0);
+            expect(downEvent.preventDefault).toHaveBeenCalled();
+
+            // Re-query items to get updated classList
+            items = dropdown.querySelectorAll('.autocomplete-item');
+            expect(items[0].classList.contains('selected')).toBe(true);
+
+            // Press ArrowDown again
+            const downEvent2 = { key: 'ArrowDown', preventDefault: jest.fn() };
+            handleAutocompleteKeyboard(downEvent2);
+            expect(autocompleteSelectedIndex).toBe(1);
+        });
+
+        it('should navigate up with ArrowUp key', () => {
+            showAutocomplete('vacation');
+
+            // Navigate down first
+            autocompleteSelectedIndex = 2;
+
+            // Press ArrowUp
+            const upEvent = { key: 'ArrowUp', preventDefault: jest.fn() };
+            handleAutocompleteKeyboard(upEvent);
+
+            expect(autocompleteSelectedIndex).toBe(1);
+            expect(upEvent.preventDefault).toHaveBeenCalled();
+        });
+
+        it('should select suggestion with Enter key', () => {
+            showAutocomplete('vacation');
+            autocompleteSelectedIndex = 0;
+
+            const enterEvent = { key: 'Enter', preventDefault: jest.fn() };
+            handleAutocompleteKeyboard(enterEvent);
+
+            const input = document.getElementById('searchInput');
+            expect(input.value).toBe(autocompleteSuggestions[0].text);
+            expect(enterEvent.preventDefault).toHaveBeenCalled();
+        });
+
+        it('should close autocomplete with Escape key', () => {
+            showAutocomplete('vacation');
+            expect(document.getElementById('autocompleteDropdown').classList.contains('active')).toBe(true);
+
+            const escapeEvent = { key: 'Escape' };
+            handleAutocompleteKeyboard(escapeEvent);
+
+            expect(document.getElementById('autocompleteDropdown').classList.contains('active')).toBe(false);
+        });
+
+        it('should load search history from localStorage', () => {
+            localStorage.setItem('gallery_search_history', JSON.stringify(['test1', 'test2']));
+
+            loadSearchHistory();
+
+            expect(searchHistory).toEqual(['test1', 'test2']);
+        });
+
+        it('should add new searches to history', () => {
+            addToSearchHistory('new search');
+
+            expect(searchHistory[0]).toBe('new search');
+            // Verify localStorage was called
+            const stored = localStorage.getItem('gallery_search_history');
+            expect(stored).toBeTruthy();
+        });
+
+        it('should not add short queries to history', () => {
+            addToSearchHistory('a');
+
+            expect(searchHistory.length).toBe(0);
+        });
+
+        it('should limit history to 20 items', () => {
+            // Add 25 items
+            for (let i = 0; i < 25; i++) {
+                addToSearchHistory(`search${i}`);
+            }
+
+            const stored = JSON.parse(localStorage.getItem('gallery_search_history'));
+            expect(stored.length).toBeLessThanOrEqual(20);
+        });
+
+        it('should move existing searches to front of history', () => {
+            searchHistory = ['old1', 'old2', 'old3'];
+
+            addToSearchHistory('old2');
+
+            expect(searchHistory[0]).toBe('old2');
+            expect(searchHistory.filter(h => h === 'old2').length).toBe(1);
+        });
+    });
 });
