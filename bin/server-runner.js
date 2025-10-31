@@ -1435,11 +1435,6 @@ async function generateIndexHTML() {
             </div>
         </div>
         <div class="header-actions">
-            <button class="header-btn" id="fullscreenBtn" onclick="toggleFullscreen()" title="Fullscreen">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-                </svg>
-            </button>
             <div class="search-container" id="searchContainer">
                 <input type="text" class="search-input" id="searchInput" placeholder="Search images..." />
                 <button class="header-btn" id="searchBtn" onclick="toggleSearch()" title="Search (Ctrl/Cmd+K)">
@@ -1449,6 +1444,11 @@ async function generateIndexHTML() {
                     </svg>
                 </button>
             </div>
+            <button class="header-btn" id="fullscreenBtn" onclick="toggleFullscreen()" title="Fullscreen">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                </svg>
+            </button>
             <button class="header-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle Theme">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
