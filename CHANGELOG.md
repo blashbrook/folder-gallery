@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/blashbrook/folder-gallery/compare/v1.15.0...v1.16.0) (2025-10-31)
+
+
+### Features
+
+* add search feature ([2f060bb](https://github.com/blashbrook/folder-gallery/commit/2f060bbcba43b5c456067558e4fe6f8f83efa847))
+
 # [1.15.0](https://github.com/blashbrook/folder-gallery/compare/v1.14.2...v1.15.0) (2025-10-27)
 
 
