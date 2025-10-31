@@ -1109,6 +1109,49 @@ async function generateIndexHTML() {
             border-color: #3498db;
             box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
         }
+        /* Autocomplete dropdown */
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 42px;
+            right: 44px;
+            width: 200px;
+            max-height: 300px;
+            overflow-y: auto;
+            background: var(--bg-secondary);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            display: none;
+        }
+        .autocomplete-dropdown.active {
+            display: block;
+        }
+        .autocomplete-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            transition: background 0.15s;
+        }
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        .autocomplete-item:hover,
+        .autocomplete-item.selected {
+            background: #3498db;
+            color: white;
+        }
+        .autocomplete-item .type {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-left: 4px;
+        }
+        .autocomplete-item .history-icon {
+            opacity: 0.5;
+            margin-right: 4px;
+        }
         .gallery-sections { padding: 0 2rem 2rem; }
         .gallery-section { margin-bottom: 2rem; }
         .section-title {
@@ -1436,7 +1479,8 @@ async function generateIndexHTML() {
         </div>
         <div class="header-actions">
             <div class="search-container" id="searchContainer">
-                <input type="text" class="search-input" id="searchInput" placeholder="Search images..." />
+                <input type="text" class="search-input" id="searchInput" placeholder="Search images..." autocomplete="off" />
+                <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
                 <button class="header-btn" id="searchBtn" onclick="toggleSearch()" title="Search (Ctrl/Cmd+K)">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"></circle>
@@ -1566,7 +1610,10 @@ async function generateIndexHTML() {
         let currentTags = [];
         let searchQuery = '';
         let searchActive = false;
-        
+        let searchHistory = [];
+        let autocompleteSuggestions = [];
+        let autocompleteSelectedIndex = -1;
+
         // Initialize tag filter button visibility based on platform
         try {
             const tagFilterBtnInit = document.getElementById('filterTagsBtn');
@@ -1651,13 +1698,195 @@ async function generateIndexHTML() {
                 btn.style.background = '';
                 btn.style.color = '';
                 btn.querySelector('svg').style.stroke = '';
+                hideAutocomplete(); // Close autocomplete dropdown
                 filterByTags(); // Re-filter to show all items
             }
         }
 
         function handleSearchInput(e) {
-            searchQuery = e.target.value.trim();
+            searchQuery = e.target.value;
+            const trimmedQuery = searchQuery.trim();
+
+            // Show autocomplete if there's input
+            if (trimmedQuery.length > 0) {
+                showAutocomplete(trimmedQuery);
+            } else {
+                hideAutocomplete();
+            }
+
             filterByTags();
+        }
+
+        // Autocomplete functions
+        function loadSearchHistory() {
+            try {
+                const stored = localStorage.getItem('gallery_search_history');
+                if (stored) {
+                    searchHistory = JSON.parse(stored);
+                }
+            } catch (e) {
+                searchHistory = [];
+            }
+        }
+
+        function saveSearchHistory() {
+            try {
+                // Keep only last 20 searches
+                const unique = [...new Set(searchHistory)];
+                const limited = unique.slice(0, 20);
+                localStorage.setItem('gallery_search_history', JSON.stringify(limited));
+            } catch (e) {
+                // Ignore storage errors
+            }
+        }
+
+        function addToSearchHistory(query) {
+            if (!query || query.length < 2) return;
+            // Add to front of history
+            searchHistory = [query, ...searchHistory.filter(h => h !== query)];
+            saveSearchHistory();
+        }
+
+        function buildSuggestions(query) {
+            const lowerQuery = query.toLowerCase();
+            const suggestions = [];
+            const seen = new Set();
+
+            // Add matching filenames
+            modalMediaList.forEach(item => {
+                const filename = item.name.toLowerCase();
+                if (filename.includes(lowerQuery) && !seen.has(item.name)) {
+                    suggestions.push({ text: item.name, type: 'file' });
+                    seen.add(item.name);
+                }
+            });
+
+            // Add matching folder names
+            const folders = new Set();
+            document.querySelectorAll('.section-title').forEach(el => {
+                const folderName = el.textContent;
+                if (folderName && folderName.toLowerCase().includes(lowerQuery)) {
+                    folders.add(folderName);
+                }
+            });
+            folders.forEach(folder => {
+                if (!seen.has(folder)) {
+                    suggestions.push({ text: folder, type: 'folder' });
+                    seen.add(folder);
+                }
+            });
+
+            // Add matching history items (show first if they match)
+            const matchingHistory = searchHistory
+                .filter(h => h.toLowerCase().includes(lowerQuery))
+                .slice(0, 3);
+
+            matchingHistory.forEach(h => {
+                if (!seen.has(h)) {
+                    suggestions.unshift({ text: h, type: 'history' });
+                }
+            });
+
+            return suggestions.slice(0, 10); // Limit to 10 suggestions
+        }
+
+        function showAutocomplete(query) {
+            autocompleteSuggestions = buildSuggestions(query);
+            autocompleteSelectedIndex = -1;
+
+            const dropdown = document.getElementById('autocompleteDropdown');
+
+            if (autocompleteSuggestions.length === 0) {
+                hideAutocomplete();
+                return;
+            }
+
+            dropdown.innerHTML = '';
+            autocompleteSuggestions.forEach((suggestion, index) => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.dataset.index = index;
+
+                let icon = '';
+                let typeLabel = '';
+                if (suggestion.type === 'history') {
+                    icon = '<span class="history-icon">🕒</span>';
+                } else if (suggestion.type === 'folder') {
+                    typeLabel = '<span class="type">folder</span>';
+                } else {
+                    typeLabel = '<span class="type">file</span>';
+                }
+
+                item.innerHTML = icon + suggestion.text + typeLabel;
+
+                item.addEventListener('click', () => {
+                    selectAutocompleteSuggestion(suggestion.text);
+                });
+
+                dropdown.appendChild(item);
+            });
+
+            dropdown.classList.add('active');
+        }
+
+        function hideAutocomplete() {
+            const dropdown = document.getElementById('autocompleteDropdown');
+            dropdown.classList.remove('active');
+            dropdown.innerHTML = '';
+            autocompleteSelectedIndex = -1;
+        }
+
+        function selectAutocompleteSuggestion(text) {
+            const input = document.getElementById('searchInput');
+            input.value = text;
+            searchQuery = text;
+            addToSearchHistory(text);
+            hideAutocomplete();
+            filterByTags();
+            input.focus();
+        }
+
+        function handleAutocompleteKeyboard(e) {
+            const dropdown = document.getElementById('autocompleteDropdown');
+            if (!dropdown.classList.contains('active')) return false;
+
+            const items = dropdown.querySelectorAll('.autocomplete-item');
+            if (items.length === 0) return false;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                autocompleteSelectedIndex = Math.min(autocompleteSelectedIndex + 1, items.length - 1);
+                updateAutocompleteSelection(items);
+                return true;
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                autocompleteSelectedIndex = Math.max(autocompleteSelectedIndex - 1, -1);
+                updateAutocompleteSelection(items);
+                return true;
+            } else if (e.key === 'Enter' && autocompleteSelectedIndex >= 0) {
+                e.preventDefault();
+                const suggestion = autocompleteSuggestions[autocompleteSelectedIndex];
+                if (suggestion) {
+                    selectAutocompleteSuggestion(suggestion.text);
+                }
+                return true;
+            } else if (e.key === 'Escape') {
+                hideAutocomplete();
+                return true;
+            }
+
+            return false;
+        }
+
+        function updateAutocompleteSelection(items) {
+            items.forEach((item, index) => {
+                if (index === autocompleteSelectedIndex) {
+                    item.classList.add('selected');
+                    item.scrollIntoView({ block: 'nearest' });
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
         }
 
         // Tag filtering functions
@@ -1855,6 +2084,7 @@ async function generateIndexHTML() {
         
         async function loadGallery() {
             loadHearts();
+            loadSearchHistory();
             const response = await fetch('/api/gallery');
             const data = await response.json();
             
@@ -2253,8 +2483,27 @@ async function generateIndexHTML() {
             if (e.key === 'ArrowLeft') { e.preventDefault(); showPrev(); }
             if (e.key === 'ArrowRight') { e.preventDefault(); showNext(); }
         });
-        // Search input event listener
-        document.getElementById('searchInput').addEventListener('input', handleSearchInput);
+        // Search input event listeners
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', handleSearchInput);
+        searchInput.addEventListener('keydown', (e) => {
+            // Handle autocomplete keyboard navigation
+            if (handleAutocompleteKeyboard(e)) {
+                return;
+            }
+            // Escape key to close autocomplete
+            if (e.key === 'Escape') {
+                hideAutocomplete();
+            }
+        });
+        // Click outside to close autocomplete
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('autocompleteDropdown');
+            const searchContainer = document.getElementById('searchContainer');
+            if (!searchContainer.contains(e.target)) {
+                hideAutocomplete();
+            }
+        });
         document.getElementById('zoomIn').onclick = () => zoom(0.2);
         document.getElementById('zoomOut').onclick = () => zoom(-0.2);
         document.getElementById('resetZoom').onclick = resetZoom;
