@@ -1074,6 +1074,41 @@ async function generateIndexHTML() {
             padding: 0;
         }
         .header-btn:hover { background: #e9ecef; }
+        /* Search container */
+        .search-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        .search-input {
+            width: 0;
+            height: 36px;
+            border: 1px solid rgba(0,0,0,0.1);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-radius: 6px;
+            padding: 0;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            opacity: 0;
+            margin-right: 0;
+            outline: none;
+        }
+        .search-container.active .search-input {
+            width: 200px;
+            padding: 0 12px;
+            opacity: 1;
+            margin-right: 8px;
+        }
+        .search-input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+        .search-input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
         .gallery-sections { padding: 0 2rem 2rem; }
         .gallery-section { margin-bottom: 2rem; }
         .section-title {
@@ -1405,6 +1440,15 @@ async function generateIndexHTML() {
                     <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
                 </svg>
             </button>
+            <div class="search-container" id="searchContainer">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search images..." />
+                <button class="header-btn" id="searchBtn" onclick="toggleSearch()" title="Search (Ctrl/Cmd+K)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                </button>
+            </div>
             <button class="header-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle Theme">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
@@ -1520,6 +1564,8 @@ async function generateIndexHTML() {
         const mediaIndexMap = new Map();
         let currentIndex = -1;
         let currentTags = [];
+        let searchQuery = '';
+        let searchActive = false;
         
         // Initialize tag filter button visibility based on platform
         try {
@@ -1584,8 +1630,36 @@ async function generateIndexHTML() {
             }
             filterByTags();
         }
-        
-        
+
+        // Search functions
+        function toggleSearch() {
+            searchActive = !searchActive;
+            const container = document.getElementById('searchContainer');
+            const input = document.getElementById('searchInput');
+            const btn = document.getElementById('searchBtn');
+
+            if (searchActive) {
+                container.classList.add('active');
+                setTimeout(() => input.focus(), 300); // Focus after animation
+                btn.style.background = '#3498db';
+                btn.style.color = '#fff';
+                btn.querySelector('svg').style.stroke = '#fff';
+            } else {
+                container.classList.remove('active');
+                input.value = '';
+                searchQuery = '';
+                btn.style.background = '';
+                btn.style.color = '';
+                btn.querySelector('svg').style.stroke = '';
+                filterByTags(); // Re-filter to show all items
+            }
+        }
+
+        function handleSearchInput(e) {
+            searchQuery = e.target.value.trim();
+            filterByTags();
+        }
+
         // Tag filtering functions
         async function loadAllTags() {
             if (!isMac) return; // Tags only available on macOS
@@ -1742,23 +1816,31 @@ async function generateIndexHTML() {
             document.querySelectorAll('.gallery-section').forEach(section => {
                 const items = section.querySelectorAll('.gallery-item');
                 let visibleCount = 0;
-                
+
                 items.forEach(item => {
                     const relativePath = item.dataset.relativePath;
                     let shouldShow = true;
-                    
+
                     // Apply heart filter first
                     if (showOnlyHearted && !heartedImages.has(relativePath)) {
                         shouldShow = false;
                     }
-                    
+
                     // Apply tag filter
                     if (shouldShow && showTagFilter && selectedTags.size > 0) {
                         const itemTags = fileTags.get(relativePath) || [];
                         // Show if the item has ANY of the selected tags
                         shouldShow = Array.from(selectedTags).some(tag => itemTags.includes(tag));
                     }
-                    
+
+                    // Apply search filter
+                    if (shouldShow && searchQuery) {
+                        const filename = (item.dataset.filename || '').toLowerCase();
+                        const dirname = (item.dataset.dirname || '').toLowerCase();
+                        const query = searchQuery.toLowerCase();
+                        shouldShow = filename.includes(query) || dirname.includes(query);
+                    }
+
                     if (shouldShow) {
                         item.style.display = '';
                         visibleCount++;
@@ -1766,7 +1848,7 @@ async function generateIndexHTML() {
                         item.style.display = 'none';
                     }
                 });
-                
+
                 section.style.display = visibleCount > 0 ? '' : 'none';
             });
         }
@@ -1811,7 +1893,9 @@ async function generateIndexHTML() {
                     const galleryItem = document.createElement('div');
                     galleryItem.className = 'gallery-item';
                     galleryItem.dataset.relativePath = item.relativePath;
-                    
+                    galleryItem.dataset.filename = item.name;
+                    galleryItem.dataset.dirname = dir;
+
                     // Track order for modal navigation
                     mediaIndexMap.set(item.relativePath, modalMediaList.length);
                     modalMediaList.push(item);
@@ -2150,11 +2234,27 @@ async function generateIndexHTML() {
         document.getElementById('closeModal').onclick = closeModal;
         modal.onclick = (e) => { if (e.target === modal) closeModal(); };
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeModal();
+            // Search shortcut: Ctrl+K or Cmd+K
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                toggleSearch();
+                return;
+            }
+            // Escape key: close modal or close search
+            if (e.key === 'Escape') {
+                if (modal.classList.contains('active')) {
+                    closeModal();
+                } else if (searchActive) {
+                    toggleSearch();
+                }
+                return;
+            }
             if (!modal.classList.contains('active')) return;
             if (e.key === 'ArrowLeft') { e.preventDefault(); showPrev(); }
             if (e.key === 'ArrowRight') { e.preventDefault(); showNext(); }
         });
+        // Search input event listener
+        document.getElementById('searchInput').addEventListener('input', handleSearchInput);
         document.getElementById('zoomIn').onclick = () => zoom(0.2);
         document.getElementById('zoomOut').onclick = () => zoom(-0.2);
         document.getElementById('resetZoom').onclick = resetZoom;

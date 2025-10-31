@@ -89,6 +89,7 @@ gallery rescan
 - Video playback support
 - Favorite/heart images with persistent storage
 - Filter to show only favorited images
+- **Search images by filename or folder name (Ctrl/Cmd+K)**
 - Fullscreen mode and dark/light theme toggle
 - Responsive design for all devices
 
@@ -527,10 +528,15 @@ PORT=8080 node server.js /path/to/images
 ### User Interface Controls
 - **Header Buttons**:
   - Fullscreen: Toggle fullscreen mode
+  - Search: Filter images by filename or folder name (Ctrl/Cmd+K)
   - Theme: Switch between dark and light themes
   - Pause/Resume: Pause or resume thumbnail generation (only visible during generation)
   - Rescan: Force directory rescan (hidden during generation)
   - Favorites Filter: Show only hearted images (highlights red when active)
+- **Keyboard Shortcuts**:
+  - `Ctrl+K` or `Cmd+K`: Open/close search
+  - `Escape`: Close search or modal
+  - `Arrow Left/Right`: Navigate images in modal view
 - **Modal Controls** (Image Viewer):
   - Heart: Favorite/unfavorite current image
   - Zoom In/Out: Control image zoom level

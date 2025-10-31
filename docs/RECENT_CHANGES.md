@@ -1,3 +1,46 @@
+# Search Feature Implementation
+
+Date: 2025-10-31
+**Status**: ✅ Complete - All 216 tests passing
+
+## Summary
+
+Added a client-side search feature to filter gallery images by filename or folder name with minimal overhead.
+
+## Features Added
+
+### UI Components
+- **Search icon** in header toolbar (magnifying glass)
+- **Expandable search input** that slides out from the icon with smooth CSS animation
+- **Visual feedback** when search is active (blue button highlight)
+- Consistent styling with existing header buttons
+
+### Functionality
+- **Real-time filtering** as user types
+- **Case-insensitive** search
+- Searches both **filename** and **folder name**
+- Works in combination with existing filters (hearts, tags)
+- **No API overhead** - filters existing DOM elements client-side
+
+### Keyboard Shortcuts
+- `Ctrl+K` or `Cmd+K` - Open/close search
+- `Escape` - Close search (or close modal if open)
+
+### Implementation Details
+- Modified file: `bin/server-runner.js`
+- Added ~60 lines of CSS for search container and input styles
+- Added ~30 lines of JavaScript for search logic
+- Enhanced `filterByTags()` function to include search filtering
+- Added `data-filename` and `data-dirname` attributes to gallery items
+- No additional files or cache storage required
+
+### Testing
+- All 216 existing tests pass
+- No regressions introduced
+- Code follows existing patterns and conventions
+
+---
+
 # Proposed Release v1.11.0 (Express v5, jsdom v27, Jest tweaks)
 
 Date: 2025-10-26
