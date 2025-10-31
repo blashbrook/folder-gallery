@@ -1,3 +1,11 @@
+# [1.22.0](https://github.com/blashbrook/folder-gallery/compare/v1.21.0...v1.22.0) (2025-10-31)
+
+
+### Features
+
+* implement word-by-word autocomplete suggestions ([f729d24](https://github.com/blashbrook/folder-gallery/commit/f729d245e7374d86b59a6157899cc3e94d89cdfe)), closes [#7](https://github.com/blashbrook/folder-gallery/issues/7)
+* implement word-by-word autocomplete suggestions ([0de0066](https://github.com/blashbrook/folder-gallery/commit/0de006664f8043f82b4a3f516820a3bc926c8819))
+
 # [1.21.0](https://github.com/blashbrook/folder-gallery/compare/v1.20.0...v1.21.0) (2025-10-31)
 
 
