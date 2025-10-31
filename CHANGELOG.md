@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/blashbrook/folder-gallery/compare/v1.20.0...v1.21.0) (2025-10-31)
+
+
+### Features
+
+* add gallery upgrade command ([f3e8ecd](https://github.com/blashbrook/folder-gallery/commit/f3e8ecda0682511b111a8100ea3782e47baaf652))
+
 # [1.20.0](https://github.com/blashbrook/folder-gallery/compare/v1.19.0...v1.20.0) (2025-10-31)
 
 
