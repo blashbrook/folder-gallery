@@ -49,6 +49,9 @@ gallery down
 # Force rescan of current gallery
 gallery rescan
 
+# Regenerate HTML/JS/CSS from latest version (preserves thumbnails & metadata)
+gallery upgrade
+
 # Preview scan results without starting server
 gallery scan
 
@@ -127,6 +130,10 @@ When a gallery is started, it creates:
 **Search Functionality**:
 - Client-side filtering by filename or folder name
 - Real-time filtering as user types (no API overhead)
+- Autocomplete dropdown with suggestions as you type
+  - Suggestions from filenames, folder names, and search history
+  - Keyboard navigation (arrow keys, Enter to select, Escape to close)
+  - Search history persisted in localStorage (max 20 items)
 - Data stored in DOM attributes (`data-filename`, `data-dirname`)
 - Keyboard shortcut: Ctrl/Cmd+K to open/close
 - Works in combination with heart and tag filters
@@ -252,6 +259,7 @@ The application gracefully handles missing optional dependencies:
 - `GET /api/gallery` - Returns JSON with all images organized by directory
 - `GET /progress` - SSE endpoint for real-time thumbnail progress
 - `POST /api/rescan` - Invalidates cache and rescans directory
+- `POST /api/upgrade` - Regenerates HTML/JS/CSS without affecting thumbnails or metadata
 - `POST /api/viewport-items` - Client reports visible items for prioritization
 - `POST /api/pause-thumbnails` - Toggle thumbnail generation pause state
 - `GET /image/:path` - Serves full-resolution image

@@ -60,6 +60,9 @@ gallery down
 
 # Force a rescan of the current gallery
 gallery rescan
+
+# Upgrade to latest UI after npm update (keeps thumbnails/metadata)
+gallery upgrade
 ```
 
 ---
@@ -89,7 +92,9 @@ gallery rescan
 - Video playback support
 - Favorite/heart images with persistent storage
 - Filter to show only favorited images
-- **Search images by filename or folder name (Ctrl/Cmd+K)**
+- **Search images with autocomplete suggestions (Ctrl/Cmd+K)**
+  - Instant suggestions for filenames and folders as you type
+  - Recent search history with keyboard navigation
 - Fullscreen mode and dark/light theme toggle
 - Responsive design for all devices
 

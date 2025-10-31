@@ -17,6 +17,7 @@ Common options:
 Other commands:
 - `gallery down` — stop all gallery servers
 - `gallery rescan` — force rescan for current gallery
+- `gallery upgrade` — regenerate HTML/JS/CSS from latest version (preserves thumbnails & metadata)
 - `gallery scan -d <path>` — dry-run scan output
 - `gallery cleanup` — clean orphan thumbnails in current dir
 - `gallery delete -d <path>` — delete all .gallery-cache directories under path
