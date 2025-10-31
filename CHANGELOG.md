@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/blashbrook/folder-gallery/compare/v1.17.0...v1.18.0) (2025-10-31)
+
+
+### Features
+
+* reorder header icons to move search icon left of fullscreen ([4761548](https://github.com/blashbrook/folder-gallery/commit/4761548d8a2f7ca811286446180be0632ee955e3))
+
 # [1.17.0](https://github.com/blashbrook/folder-gallery/compare/v1.16.0...v1.17.0) (2025-10-31)
 
 
